@@ -8,10 +8,14 @@
         </p>
       </div>
       <div class="admin-page-actions">
-        <button class="btn btn-ghost" @click="resetSeed">Tohum verisine sıfırla</button>
+        <button class="btn btn-ghost" @click="refresh" :disabled="store.loading">
+          {{ store.loading ? 'Yükleniyor…' : '↻ Yenile' }}
+        </button>
         <RouterLink to="/admin/yeni" class="btn btn-primary">+ Yeni motor</RouterLink>
       </div>
     </div>
+
+    <p v-if="store.error" class="form-error">{{ store.error }}</p>
 
     <div class="admin-stats-row">
       <div class="admin-stat-card">
@@ -71,7 +75,7 @@
               <button
                 class="toggle-pill"
                 :class="m.inStock ? 'on' : 'off'"
-                @click="store.updateMotor(m.id, { inStock: !m.inStock })"
+                @click="toggleStock(m)"
               >
                 {{ m.inStock ? 'Stokta' : 'Tükendi' }}
               </button>
@@ -80,7 +84,7 @@
               <button
                 class="toggle-pill"
                 :class="m.featured ? 'on' : 'off'"
-                @click="store.updateMotor(m.id, { featured: !m.featured })"
+                @click="toggleFeatured(m)"
               >
                 {{ m.featured ? '★ Evet' : 'Hayır' }}
               </button>
@@ -101,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useMotorStore } from '../../stores/motors';
 import { CATEGORY_LABELS, formatPrice } from '../../data/seed';
 import MotoImage from '../../components/MotoImage.vue';
@@ -110,29 +114,42 @@ const store = useMotorStore();
 const sortedMotors = computed(() => store.sorted);
 const dragIndex = ref(null);
 
+onMounted(() => {
+  if (!store.loaded) store.fetchAll();
+});
+
 function dragStart(i, e) {
   dragIndex.value = i;
   e.dataTransfer.effectAllowed = 'move';
 }
 
-function drop(i) {
+async function drop(i) {
   if (dragIndex.value === null || dragIndex.value === i) return;
   const next = [...sortedMotors.value];
   const [moved] = next.splice(dragIndex.value, 1);
   next.splice(i, 0, moved);
-  store.reorderMotors(next);
   dragIndex.value = null;
+  try { await store.reorderMotors(next); }
+  catch (e) { console.error('reorder failed', e); }
 }
 
-function confirmDelete(m) {
-  if (confirm(`"${m.name}" silinecek. Emin misiniz?`)) {
-    store.deleteMotor(m.id);
-  }
+async function confirmDelete(m) {
+  if (!confirm(`"${m.name}" silinecek. Emin misiniz?`)) return;
+  try { await store.deleteMotor(m.id); }
+  catch (e) { alert('Silinemedi: ' + (e.message || e)); }
 }
 
-function resetSeed() {
-  if (confirm('Tüm değişiklikler silinip başlangıç verisi geri yüklenecek. Devam edilsin mi?')) {
-    store.resetToSeed();
-  }
+async function toggleStock(m) {
+  try { await store.updateMotor(m.id, { inStock: !m.inStock }); }
+  catch (e) { alert('Güncellenemedi: ' + (e.message || e)); }
+}
+
+async function toggleFeatured(m) {
+  try { await store.updateMotor(m.id, { featured: !m.featured }); }
+  catch (e) { alert('Güncellenemedi: ' + (e.message || e)); }
+}
+
+function refresh() {
+  store.fetchAll(true);
 }
 </script>

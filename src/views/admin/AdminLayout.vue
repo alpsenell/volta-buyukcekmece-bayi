@@ -43,8 +43,8 @@ import { useAuthStore } from '../../stores/motors';
 const router = useRouter();
 const auth = useAuthStore();
 
-function logout() {
-  auth.logout();
+async function logout() {
+  await auth.logout();
   router.push('/admin-login');
 }
 </script>

@@ -1,25 +1,53 @@
-// Pinia store: motor envanteri (localStorage tabanlı)
+// Pinia stores: motor inventory + admin auth, backed by Supabase.
+// Public site reads via the anon key; admin writes require an authenticated session.
 import { defineStore } from 'pinia';
-import { SEED_MOTORS, slugify } from '../data/seed';
+import { supabase, PHOTOS_BUCKET } from '../lib/supabase';
+import { slugify } from '../data/seed';
 
-const STORAGE_KEY = 'volta_bayi_motors_v1';
+// DB <-> app field mapping (DB uses snake_case, app uses camelCase).
+function mapFromDb(row) {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    category: row.category,
+    price: Number(row.price),
+    range: row.range_km,
+    topSpeed: row.top_speed,
+    chargeTime: Number(row.charge_hours),
+    colors: row.colors ?? [],
+    inStock: row.in_stock,
+    featured: row.featured,
+    order: row.sort_order,
+    description: row.description ?? '',
+    photo: row.image_url ?? null,
+  };
+}
 
-function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_MOTORS));
-      return [...SEED_MOTORS];
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    return [...SEED_MOTORS];
-  }
+function mapToDb(m) {
+  return {
+    slug: m.slug,
+    name: m.name,
+    category: m.category,
+    price: m.price,
+    range_km: m.range,
+    top_speed: m.topSpeed,
+    charge_hours: m.chargeTime,
+    colors: m.colors ?? [],
+    in_stock: m.inStock,
+    featured: m.featured,
+    sort_order: m.order ?? 9999,
+    description: m.description ?? null,
+    image_url: m.photo ?? null,
+  };
 }
 
 export const useMotorStore = defineStore('motors', {
   state: () => ({
-    motors: loadFromStorage(),
+    motors: [],
+    loading: false,
+    loaded: false,
+    error: null,
   }),
 
   getters: {
@@ -35,65 +63,141 @@ export const useMotorStore = defineStore('motors', {
   },
 
   actions: {
-    persist() {
+    async fetchAll(force = false) {
+      if (this.loaded && !force) return;
+      this.loading = true;
+      this.error = null;
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.motors));
+        const { data, error } = await supabase
+          .from('motors')
+          .select('*')
+          .order('sort_order', { ascending: true });
+        if (error) throw error;
+        this.motors = (data ?? []).map(mapFromDb);
+        this.loaded = true;
       } catch (e) {
-        console.error('Veri kaydedilemedi:', e);
+        this.error = e.message ?? String(e);
+        console.error('[motors] fetchAll', e);
+      } finally {
+        this.loading = false;
       }
     },
 
-    addMotor(motor) {
-      const id = 'm-' + Date.now();
-      const slug = slugify(motor.name) || id;
-      const newMotor = { id, slug, order: 9999, ...motor };
-      this.motors.push(newMotor);
-      this.persist();
-      return newMotor;
+    async addMotor(motor) {
+      const slug = slugify(motor.name) || `motor-${Date.now()}`;
+      const payload = mapToDb({ ...motor, slug });
+      const { data, error } = await supabase
+        .from('motors')
+        .insert(payload)
+        .select()
+        .single();
+      if (error) throw error;
+      const created = mapFromDb(data);
+      this.motors.push(created);
+      return created;
     },
 
-    updateMotor(id, patch) {
+    async updateMotor(id, patch) {
+      const current = this.motors.find((m) => m.id === id);
+      if (!current) throw new Error('Motor not found: ' + id);
+      const merged = { ...current, ...patch };
+      const payload = mapToDb(merged);
+      const { data, error } = await supabase
+        .from('motors')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      const updated = mapFromDb(data);
       const idx = this.motors.findIndex((m) => m.id === id);
-      if (idx >= 0) {
-        this.motors[idx] = { ...this.motors[idx], ...patch };
-        this.persist();
+      if (idx >= 0) this.motors[idx] = updated;
+      return updated;
+    },
+
+    async deleteMotor(id) {
+      const { error } = await supabase.from('motors').delete().eq('id', id);
+      if (error) throw error;
+      this.motors = this.motors.filter((m) => m.id !== id);
+    },
+
+    async reorderMotors(nextList) {
+      const ordered = nextList.map((m, i) => ({ ...m, order: i + 1 }));
+      this.motors = ordered;
+      const updates = ordered.map((m) =>
+        supabase.from('motors').update({ sort_order: m.order }).eq('id', m.id)
+      );
+      const results = await Promise.all(updates);
+      const firstErr = results.find((r) => r.error);
+      if (firstErr) {
+        console.error('[motors] reorder error', firstErr.error);
+        await this.fetchAll(true);
+        throw firstErr.error;
       }
     },
 
-    deleteMotor(id) {
-      this.motors = this.motors.filter((m) => m.id !== id);
-      this.persist();
-    },
-
-    reorderMotors(nextList) {
-      this.motors = nextList.map((m, i) => ({ ...m, order: i + 1 }));
-      this.persist();
-    },
-
-    resetToSeed() {
-      this.motors = [...SEED_MOTORS];
-      this.persist();
+    async uploadPhoto(file) {
+      if (!file) return null;
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from(PHOTOS_BUCKET)
+        .upload(path, file, { cacheControl: '3600', upsert: false });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from(PHOTOS_BUCKET).getPublicUrl(path);
+      return pub.publicUrl;
     },
   },
 });
 
-// Admin auth store
+// =========================================================================
+// Auth store — wraps Supabase Auth.
+// Sign-ups must be DISABLED in the Supabase dashboard so only the dealer's
+// pre-created admin account can sign in.
+// =========================================================================
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    isAuthed: sessionStorage.getItem('volta_admin') === '1',
+    session: null,
+    loading: false,
+    error: null,
+    initialized: false,
   }),
+
+  getters: {
+    isAuthed: (state) => !!state.session,
+    user: (state) => state.session?.user ?? null,
+  },
+
   actions: {
-    login(password) {
-      if (password === 'admin123') {
-        this.isAuthed = true;
-        sessionStorage.setItem('volta_admin', '1');
-        return true;
-      }
-      return false;
+    async init() {
+      if (this.initialized) return;
+      this.initialized = true;
+      const { data } = await supabase.auth.getSession();
+      this.session = data.session;
+      supabase.auth.onAuthStateChange((_event, session) => {
+        this.session = session;
+      });
     },
-    logout() {
-      this.isAuthed = false;
-      sessionStorage.removeItem('volta_admin');
+
+    async login(email, password) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        this.session = data.session;
+        return true;
+      } catch (e) {
+        this.error = e.message ?? String(e);
+        return false;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async logout() {
+      await supabase.auth.signOut();
+      this.session = null;
     },
   },
 });

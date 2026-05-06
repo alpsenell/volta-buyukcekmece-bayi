@@ -13,20 +13,28 @@
         </span>
       </div>
       <h1>Bayi Yönetim Paneli</h1>
-      <p class="admin-login-lead">Devam etmek için yönetici şifresini girin.</p>
+      <p class="admin-login-lead">Yönetici e-posta ve şifresi ile giriş yapın.</p>
       <form @submit.prevent="onSubmit" class="admin-login-form">
+        <input
+          type="email"
+          v-model="email"
+          placeholder="ornek@volta-bayi.com"
+          autocomplete="email"
+          required
+          autofocus
+        />
         <input
           type="password"
           v-model="password"
-          placeholder="Yönetici şifresi"
-          autofocus
+          placeholder="Şifre"
+          autocomplete="current-password"
+          required
         />
-        <button type="submit" class="btn btn-primary btn-lg">Giriş yap</button>
+        <button type="submit" class="btn btn-primary btn-lg" :disabled="auth.loading">
+          {{ auth.loading ? 'Giriş yapılıyor…' : 'Giriş yap' }}
+        </button>
         <p v-if="error" class="form-error">{{ error }}</p>
       </form>
-      <div class="admin-login-hint">
-        <strong>Demo şifre:</strong> <code>admin123</code>
-      </div>
       <RouterLink to="/" class="btn-link">← Ana siteye dön</RouterLink>
     </div>
   </main>
@@ -37,16 +45,19 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/motors';
 
+const email = ref('');
 const password = ref('');
 const error = ref('');
 const auth = useAuthStore();
 const router = useRouter();
 
-function onSubmit() {
-  if (auth.login(password.value)) {
+async function onSubmit() {
+  error.value = '';
+  const ok = await auth.login(email.value.trim(), password.value);
+  if (ok) {
     router.push('/admin');
   } else {
-    error.value = 'Şifre hatalı. Demo şifre: admin123';
+    error.value = auth.error || 'Giriş başarısız. E-posta veya şifre hatalı.';
   }
 }
 </script>

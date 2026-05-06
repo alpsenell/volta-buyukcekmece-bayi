@@ -1,20 +1,21 @@
-# Volta Büyükçekmece Bayi — Vue 3 + Vite
+# Volta Büyükçekmece Bayi — Vue 3 + Vite + Supabase
 
-Volta Motor Büyükçekmece bayisi için Vue 3 + Vite ile hazırlanmış kurumsal site ve yönetim paneli.
+Volta Motor Büyükçekmece bayisi için kurumsal site ve yönetim paneli.
 
 ## Teknolojiler
 
 - **Vue 3** (Composition API, `<script setup>` SFC)
 - **Vite 6** (dev server + build)
-- **Vue Router 4** (history mode)
+- **Vue Router 4** (history mode + admin guard)
 - **Pinia 2** (state management)
-- localStorage ile motor envanter persistanslı
+- **Supabase** (Postgres veritabanı + Auth + Storage)
+- **Vercel** için yapılandırılmış (`vercel.json` SPA rewrite + cache header)
 
-## Kurulum
+## Hızlı başlangıç (yerel geliştirme)
 
 ```bash
-cd vue-app
 npm install
+cp .env.example .env.local       # sonra .env.local içini gerçek Supabase değerleriyle doldur
 npm run dev
 ```
 
@@ -27,21 +28,45 @@ npm run build       # dist/ klasörüne üretim build'i
 npm run preview     # build sonucunu lokal'de önizle
 ```
 
+## Supabase kurulumu
+
+1. <https://supabase.com> üzerinden yeni bir proje oluştur (region: `eu-central-1` Frankfurt önerilir, Türkiye'ye en yakın).
+2. Project Settings → API: `Project URL` ve `anon public` anahtarını al, `.env.local` içine yaz:
+   ```
+   VITE_SUPABASE_URL=https://xxxx.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJ...
+   ```
+3. SQL Editor'da sırayla çalıştır:
+   - `supabase/migrations/0001_init.sql` (motors tablosu, RLS, storage bucket)
+   - `supabase/migrations/0002_seed.sql` (8 başlangıç motoru)
+4. Authentication → Providers → Email: kullan. Authentication → Sign-up: **kapat** (yalnızca dealer girebilsin).
+5. Authentication → Users → "Add user": dealer için bir admin hesabı oluştur (e-posta + şifre).
+6. `npm run dev` ile siteyi aç, `/admin-login` üzerinden gir.
+
 ## Proje yapısı
 
 ```
-vue-app/
-├── index.html
+volta-buyukcekmece-bayi/
+├── index.html                 # SEO meta + JSON-LD LocalBusiness
 ├── package.json
+├── vercel.json                # SPA rewrite + cache header
 ├── vite.config.js
+├── public/
+│   ├── favicon.svg
+│   ├── robots.txt
+│   └── sitemap.xml
+├── supabase/migrations/
+│   ├── 0001_init.sql          # motors tablosu + RLS + storage bucket
+│   └── 0002_seed.sql          # 8 başlangıç motoru
 └── src/
-    ├── main.js                 # uygulama giriş
-    ├── App.vue                 # kök bileşen
-    ├── router.js               # Vue Router (history mode + admin guard)
-    ├── styles/main.css         # tüm site stilleri
-    ├── data/seed.js            # seed motorlar + sabitler + helpers
-    ├── stores/motors.js        # Pinia: motor envanter + auth
-    ├── components/             # paylaşılan bileşenler
+    ├── main.js                # auth bootstrap → app mount
+    ├── App.vue                # kök bileşen + ilk fetchAll
+    ├── router.js              # rotalar + admin guard + SEO meta
+    ├── lib/supabase.js        # Supabase client
+    ├── styles/main.css
+    ├── data/seed.js           # CATEGORY_LABELS + formatPrice + slugify
+    ├── stores/motors.js       # Pinia: motors + auth (Supabase backed)
+    ├── components/
     │   ├── SiteHeader.vue
     │   ├── SiteFooter.vue
     │   ├── MotoCard.vue
@@ -49,10 +74,10 @@ vue-app/
     │   ├── MotoSilhouette.vue
     │   ├── StockBadge.vue
     │   └── ColorDots.vue
-    └── views/                  # sayfa bileşenleri
+    └── views/
         ├── HomeView.vue
         ├── CatalogView.vue
-        ├── DetailView.vue
+        ├── DetailView.vue     # per-motor SEO + Product JSON-LD
         ├── AboutView.vue
         ├── ContactView.vue
         ├── NotFoundView.vue
@@ -72,19 +97,30 @@ vue-app/
 - `/hakkimizda` — Hakkımızda
 - `/iletisim` — İletişim (form + harita placeholder)
 
-**Yönetim paneli** (`/admin-login` ile giriş — demo şifre: `admin123`)
+**Yönetim paneli** (`/admin-login` ile giriş — Supabase Auth e-posta + şifre)
 - `/admin` — Motor listesi (drag-drop sıralama, hızlı stok/öne-çıkar toggle, sil)
 - `/admin/yeni` — Yeni motor ekleme
-- `/admin/duzenle/:id` — Mevcut motor düzenleme (foto sürükle-bırak)
+- `/admin/duzenle/:id` — Mevcut motor düzenleme (foto Supabase Storage'a yükleniyor)
 
-Admin route guard `router.js`'de — auth olmadan `/admin/*` ziyareti `/admin-login`'e yönlendirir.
+`/admin/*` rotaları admin guard'lı + `noindex, nofollow`.
 
-## Veri
+## Vercel'e deploy
 
-`localStorage['volta_bayi_motors_v1']` anahtarında saklanır. İlk açılışta `src/data/seed.js`'deki SEED_MOTORS otomatik yüklenir. Admin panelden "Tohum verisine sıfırla" ile geri alınabilir.
+1. Repoyu GitHub'a push et.
+2. <https://vercel.com> → New Project → ilgili repoyu seç. Vercel Vite'ı otomatik algılar.
+3. Environment Variables'a ekle:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. Deploy. Custom domain için Project → Settings → Domains.
+
+## SEO
+
+- `index.html` içinde Open Graph + Twitter card + LocalBusiness (`AutomotiveBusiness`) JSON-LD.
+- Her rotada dinamik `<title>` + `<meta description>` + canonical (`router.afterEach`).
+- Detay sayfasında her motor için `Product` JSON-LD (fiyat + stok durumu).
+- `public/robots.txt` + `public/sitemap.xml`. Domain değişince güncelle.
 
 ## Notlar
 
-- Bu bir prototiptir — gerçek auth yok, demo şifre `admin123` istemcide kontrol ediliyor. Production'a almadan önce backend + JWT/session ekleyin.
-- Foto upload'ı dataURL olarak localStorage'a kaydediliyor; üretimde gerçek bir storage'a yönlendirin.
-- İletişim formu sadece UI seviyesinde — submit için backend bağlayın.
+- Üretime almadan önce: Supabase'de Sign-up kapalı olduğundan emin ol; admin RLS politikalarını test et.
+- İletişim formu UI seviyesinde — submit için Supabase'de bir `contact_messages` tablosu eklenebilir veya bir e-posta servisine bağlanabilir.

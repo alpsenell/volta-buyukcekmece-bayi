@@ -77,10 +77,11 @@ const router = createRouter({
   scrollBehavior() { return { top: 0 }; },
 });
 
-// Admin guard
-router.beforeEach((to) => {
+// Admin guard — waits for Supabase session bootstrap (idempotent).
+router.beforeEach(async (to) => {
   if (to.path.startsWith('/admin') && to.name !== 'admin-login') {
     const auth = useAuthStore();
+    await auth.init();
     if (!auth.isAuthed) {
       return { name: 'admin-login' };
     }

@@ -101,6 +101,10 @@
                 <img :src="form.photo" alt="Motor fotoğrafı" />
                 <button type="button" class="btn-icon photo-clear" @click.stop="form.photo = null" aria-label="Fotoğrafı kaldır">×</button>
               </div>
+              <div v-else-if="uploading" class="photo-empty">
+                <div class="photo-empty-icon">⏳</div>
+                <div>Yükleniyor…</div>
+              </div>
               <div v-else class="photo-empty">
                 <div class="photo-empty-icon">📷</div>
                 <div>Fotoğrafı sürükleyip bırakın<br>veya tıklayıp seçin</div>
@@ -126,9 +130,10 @@
       </div>
 
       <div class="admin-form-actions">
+        <p v-if="error" class="form-error">{{ error }}</p>
         <RouterLink to="/admin" class="btn btn-ghost">İptal</RouterLink>
-        <button type="submit" class="btn btn-primary btn-lg">
-          {{ isEdit ? 'Değişiklikleri kaydet' : 'Motoru ekle' }}
+        <button type="submit" class="btn btn-primary btn-lg" :disabled="saving || uploading">
+          {{ saving ? 'Kaydediliyor…' : (isEdit ? 'Değişiklikleri kaydet' : 'Motoru ekle') }}
         </button>
       </div>
     </form>
@@ -147,6 +152,9 @@ const store = useMotorStore();
 
 const isEdit = computed(() => !!route.params.id);
 const dragOver = ref(false);
+const uploading = ref(false);
+const saving = ref(false);
+const error = ref('');
 
 const blank = {
   name: '',
@@ -164,8 +172,9 @@ const blank = {
 
 const form = reactive({ ...blank });
 
-onMounted(() => {
+onMounted(async () => {
   if (isEdit.value) {
+    if (!store.loaded) await store.fetchAll();
     const existing = store.motors.find((m) => m.id === route.params.id);
     if (existing) {
       Object.assign(form, JSON.parse(JSON.stringify(existing)));
@@ -192,29 +201,44 @@ function removeColor(i) {
 
 function onFileChange(e) {
   const file = e.target.files?.[0];
-  if (file) readFile(file);
+  if (file) handleFile(file);
 }
 function onDrop(e) {
   dragOver.value = false;
   const file = e.dataTransfer?.files?.[0];
-  if (file) readFile(file);
+  if (file) handleFile(file);
 }
-function readFile(file) {
+async function handleFile(file) {
   if (!file.type.startsWith('image/')) {
-    alert('Lütfen bir görsel dosyası seçin.');
+    error.value = 'Lütfen bir görsel dosyası seçin.';
     return;
   }
-  const reader = new FileReader();
-  reader.onload = (ev) => { form.photo = ev.target.result; };
-  reader.readAsDataURL(file);
+  error.value = '';
+  uploading.value = true;
+  try {
+    const url = await store.uploadPhoto(file);
+    form.photo = url;
+  } catch (e) {
+    error.value = 'Fotoğraf yüklenemedi: ' + (e.message || e);
+  } finally {
+    uploading.value = false;
+  }
 }
 
-function save() {
-  if (isEdit.value) {
-    store.updateMotor(route.params.id, { ...form });
-  } else {
-    store.addMotor({ ...form });
+async function save() {
+  error.value = '';
+  saving.value = true;
+  try {
+    if (isEdit.value) {
+      await store.updateMotor(route.params.id, { ...form });
+    } else {
+      await store.addMotor({ ...form });
+    }
+    router.push('/admin');
+  } catch (e) {
+    error.value = 'Kaydedilemedi: ' + (e.message || e);
+  } finally {
+    saving.value = false;
   }
-  router.push('/admin');
 }
 </script>
