@@ -69,7 +69,7 @@
               <div class="admin-cell-strong">{{ m.name }}</div>
               <div class="admin-cell-sub">/{{ m.slug }}</div>
             </td>
-            <td>{{ CATEGORY_LABELS[m.category] }}</td>
+            <td>{{ categoryStore.labelOf(m.category) }}</td>
             <td class="num">{{ formatPrice(m.price) }}</td>
             <td>
               <button
@@ -107,10 +107,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useMotorStore } from '../../stores/motors';
-import { CATEGORY_LABELS, formatPrice } from '../../data/seed';
+import { useCategoryStore } from '../../stores/site';
+import { formatPrice } from '../../data/seed';
 import MotoImage from '../../components/MotoImage.vue';
 
 const store = useMotorStore();
+const categoryStore = useCategoryStore();
 const sortedMotors = computed(() => store.sorted);
 const dragIndex = ref(null);
 

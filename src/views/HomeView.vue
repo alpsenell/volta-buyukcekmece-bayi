@@ -1,23 +1,42 @@
 <template>
   <main>
     <!-- HERO -->
-    <section class="hero hero-split">
+    <section
+      v-if="hasHeroImage"
+      class="hero hero-banner"
+      :style="{ backgroundImage: `url(${settings.hero_image_url})` }"
+    >
       <div class="container hero-inner">
         <div class="hero-text">
           <div class="hero-eyebrow">
             <span class="eyebrow-dot"></span>
             Volta Motor Yetkili Bayi · Büyükçekmece
           </div>
-          <h1 class="hero-title">
-            Şehir senin,<br>
-            <span class="hero-accent">enerji bizden.</span>
-          </h1>
-          <p class="hero-lead">
-            Türkiye'nin elektrikli mobilite markası Volta Motor'un Büyükçekmece bayisinde
-            scooter, ATV ve elektrikli bisiklet modellerimizi keşfedin.
-          </p>
+          <h1 class="hero-title">{{ heroTitle }}</h1>
+          <p class="hero-lead">{{ heroSubtitle }}</p>
           <div class="hero-ctas">
-            <RouterLink to="/katalog" class="btn btn-primary btn-lg">Tüm motorları gör</RouterLink>
+            <RouterLink :to="settings.hero_cta_href || '/katalog'" class="btn btn-primary btn-lg">
+              {{ settings.hero_cta_label || 'Tüm motorları gör' }}
+            </RouterLink>
+            <RouterLink to="/iletisim" class="btn btn-ghost btn-lg">Bayiyi ziyaret et →</RouterLink>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section v-else class="hero hero-split">
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <div class="hero-eyebrow">
+            <span class="eyebrow-dot"></span>
+            Volta Motor Yetkili Bayi · Büyükçekmece
+          </div>
+          <h1 class="hero-title" v-html="heroTitleSplit"></h1>
+          <p class="hero-lead">{{ heroSubtitle }}</p>
+          <div class="hero-ctas">
+            <RouterLink :to="settings.hero_cta_href || '/katalog'" class="btn btn-primary btn-lg">
+              {{ settings.hero_cta_label || 'Tüm motorları gör' }}
+            </RouterLink>
             <RouterLink to="/iletisim" class="btn btn-ghost btn-lg">Bayiyi ziyaret et →</RouterLink>
           </div>
           <div class="hero-stats">
@@ -58,35 +77,24 @@
     </section>
 
     <!-- Kategoriler -->
-    <section class="categories container">
-      <RouterLink to="/katalog?cat=scooter" class="cat-card">
-        <div class="cat-num">{{ totalScooter }}</div>
+    <section v-if="categoryStore.sorted.length" class="categories container">
+      <RouterLink
+        v-for="c in categoryStore.sorted"
+        :key="c.id"
+        :to="`/katalog?cat=${c.slug}`"
+        class="cat-card"
+      >
+        <div class="cat-num">{{ countByCategory(c.slug) }}</div>
         <div class="cat-info">
-          <h3>Elektrikli Scooter</h3>
-          <p>Şehir içi günlük ulaşım için</p>
-        </div>
-        <div class="cat-arrow">→</div>
-      </RouterLink>
-      <RouterLink to="/katalog?cat=atv" class="cat-card">
-        <div class="cat-num">{{ totalAtv }}</div>
-        <div class="cat-info">
-          <h3>Elektrikli ATV</h3>
-          <p>Arazi ve eğlence kullanımı</p>
-        </div>
-        <div class="cat-arrow">→</div>
-      </RouterLink>
-      <RouterLink to="/katalog?cat=bike" class="cat-card">
-        <div class="cat-num">{{ totalBike }}</div>
-        <div class="cat-info">
-          <h3>Elektrikli Bisiklet</h3>
-          <p>Pedal destekli, sıfır emisyon</p>
+          <h3>{{ c.label }}</h3>
+          <p>{{ countByCategory(c.slug) }} model</p>
         </div>
         <div class="cat-arrow">→</div>
       </RouterLink>
     </section>
 
     <!-- Öne çıkanlar -->
-    <section class="featured-section container">
+    <section v-if="featured.length" class="featured-section container">
       <div class="section-head">
         <div>
           <div class="section-eyebrow">Öne çıkanlar</div>
@@ -136,7 +144,8 @@
       <div class="cta-card">
         <div>
           <h2>Showroom'umuzu ziyaret edin.</h2>
-          <p>Atatürk Caddesi No: 123, Büyükçekmece. Hafta içi 09:00–19:00, Cumartesi 10:00–18:00.</p>
+          <p v-if="settings.address">{{ settings.address }}<span v-if="settings.working_hours"> · {{ settings.working_hours }}</span></p>
+          <p v-else>Atatürk Caddesi No: 123, Büyükçekmece. Hafta içi 09:00–19:00, Cumartesi 10:00–18:00.</p>
         </div>
         <RouterLink to="/iletisim" class="btn btn-primary btn-lg">Konum ve iletişim →</RouterLink>
       </div>
@@ -147,13 +156,45 @@
 <script setup>
 import { computed } from 'vue';
 import { useMotorStore } from '../stores/motors';
+import { useCategoryStore, useSettingsStore } from '../stores/site';
 import { formatPrice } from '../data/seed';
 import MotoCard from '../components/MotoCard.vue';
 import MotoImage from '../components/MotoImage.vue';
 
 const store = useMotorStore();
+const categoryStore = useCategoryStore();
+const settingsStore = useSettingsStore();
+
+const settings = computed(() => settingsStore.settings);
 const featured = computed(() => store.featured);
-const totalScooter = computed(() => store.motors.filter((m) => m.category === 'scooter').length);
-const totalAtv = computed(() => store.motors.filter((m) => m.category === 'atv').length);
-const totalBike = computed(() => store.motors.filter((m) => m.category === 'bike').length);
+
+const hasHeroImage = computed(() => !!settings.value.hero_image_url);
+const heroTitle = computed(() => settings.value.hero_title || 'Şehir senin, enerji bizden.');
+const heroSubtitle = computed(() =>
+  settings.value.hero_subtitle ||
+  "Türkiye'nin elektrikli mobilite markası Volta Motor'un Büyükçekmece bayisinde scooter, ATV ve elektrikli bisiklet modellerimizi keşfedin."
+);
+
+// For the split-hero (no banner image), break the title at the first comma
+// for the two-line accent treatment used in the original design.
+const heroTitleSplit = computed(() => {
+  const t = heroTitle.value;
+  const idx = t.indexOf(',');
+  if (idx > 0) {
+    const first = t.slice(0, idx + 1);
+    const rest = t.slice(idx + 1).trim();
+    return `${escapeHtml(first)}<br><span class="hero-accent">${escapeHtml(rest)}</span>`;
+  }
+  return escapeHtml(t);
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (m) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[m]));
+}
+
+function countByCategory(slug) {
+  return store.motors.filter((m) => m.category === slug).length;
+}
 </script>

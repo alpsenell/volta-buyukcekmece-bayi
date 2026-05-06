@@ -15,14 +15,13 @@
         <button :class="{ active: filter === 'all' }" @click="filter = 'all'">
           Tümü <span class="count">{{ store.motors.length }}</span>
         </button>
-        <button :class="{ active: filter === 'scooter' }" @click="filter = 'scooter'">
-          Scooter <span class="count">{{ countByCategory('scooter') }}</span>
-        </button>
-        <button :class="{ active: filter === 'atv' }" @click="filter = 'atv'">
-          ATV <span class="count">{{ countByCategory('atv') }}</span>
-        </button>
-        <button :class="{ active: filter === 'bike' }" @click="filter = 'bike'">
-          E-Bisiklet <span class="count">{{ countByCategory('bike') }}</span>
+        <button
+          v-for="c in categoryStore.sorted"
+          :key="c.id"
+          :class="{ active: filter === c.slug }"
+          @click="filter = c.slug"
+        >
+          {{ c.label }} <span class="count">{{ countByCategory(c.slug) }}</span>
         </button>
       </div>
 
@@ -64,10 +63,12 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useMotorStore } from '../stores/motors';
+import { useCategoryStore } from '../stores/site';
 import MotoCard from '../components/MotoCard.vue';
 
 const route = useRoute();
 const store = useMotorStore();
+const categoryStore = useCategoryStore();
 const filter = ref('all');
 const stockFilter = ref('all');
 const sort = ref('order');

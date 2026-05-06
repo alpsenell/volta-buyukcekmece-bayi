@@ -1,0 +1,186 @@
+// Pinia stores for admin-managed categories + site-wide settings (logo,
+// address, hero banner, etc). Both back onto Supabase.
+import { defineStore } from 'pinia';
+import { supabase, SITE_ASSETS_BUCKET } from '../lib/supabase';
+import { slugify } from '../data/seed';
+
+// =========================================================================
+// Categories
+// =========================================================================
+export const useCategoryStore = defineStore('categories', {
+  state: () => ({
+    categories: [],
+    loading: false,
+    loaded: false,
+    error: null,
+  }),
+
+  getters: {
+    sorted: (state) =>
+      [...state.categories].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999)),
+    bySlug: (state) => (slug) => state.categories.find((c) => c.slug === slug),
+    labelOf: (state) => (slug) => state.categories.find((c) => c.slug === slug)?.label ?? slug,
+  },
+
+  actions: {
+    async fetchAll(force = false) {
+      if (this.loaded && !force) return;
+      this.loading = true;
+      this.error = null;
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .order('sort_order', { ascending: true });
+        if (error) throw error;
+        this.categories = data ?? [];
+        this.loaded = true;
+      } catch (e) {
+        this.error = e.message ?? String(e);
+        console.error('[categories] fetchAll', e);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async addCategory({ label, sort_order }) {
+      const slug = slugify(label);
+      if (!slug) throw new Error('Geçersiz isim');
+      const payload = {
+        slug,
+        label: label.trim(),
+        sort_order: Number.isFinite(sort_order) ? sort_order : 9999,
+      };
+      const { data, error } = await supabase
+        .from('categories')
+        .insert(payload)
+        .select()
+        .single();
+      if (error) throw error;
+      this.categories.push(data);
+      return data;
+    },
+
+    async updateCategory(id, patch) {
+      const payload = { ...patch };
+      if (payload.label) payload.label = payload.label.trim();
+      const { data, error } = await supabase
+        .from('categories')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      const idx = this.categories.findIndex((c) => c.id === id);
+      if (idx >= 0) this.categories[idx] = data;
+      return data;
+    },
+
+    async deleteCategory(id) {
+      // Block deletion if any motor still uses this category.
+      const cat = this.categories.find((c) => c.id === id);
+      if (!cat) return;
+      const { count, error: countErr } = await supabase
+        .from('motors')
+        .select('id', { count: 'exact', head: true })
+        .eq('category', cat.slug);
+      if (countErr) throw countErr;
+      if ((count ?? 0) > 0) {
+        throw new Error(
+          `Bu kategoride ${count} motor var. Önce motorları başka bir kategoriye taşıyın.`
+        );
+      }
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) throw error;
+      this.categories = this.categories.filter((c) => c.id !== id);
+    },
+  },
+});
+
+// =========================================================================
+// Site settings (singleton row, id = 1)
+// =========================================================================
+const DEFAULT_SETTINGS = {
+  id: 1,
+  logo_url: null,
+  address: '',
+  phone: '',
+  email: '',
+  working_hours: '',
+  map_lat: null,
+  map_lng: null,
+  hero_title: '',
+  hero_subtitle: '',
+  hero_cta_label: '',
+  hero_cta_href: '/katalog',
+  hero_image_url: null,
+  social_facebook: '',
+  social_instagram: '',
+  social_youtube: '',
+};
+
+export const useSettingsStore = defineStore('settings', {
+  state: () => ({
+    settings: { ...DEFAULT_SETTINGS },
+    loading: false,
+    loaded: false,
+    saving: false,
+    error: null,
+  }),
+
+  actions: {
+    async fetch(force = false) {
+      if (this.loaded && !force) return;
+      this.loading = true;
+      this.error = null;
+      try {
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('*')
+          .eq('id', 1)
+          .maybeSingle();
+        if (error) throw error;
+        if (data) this.settings = { ...DEFAULT_SETTINGS, ...data };
+        this.loaded = true;
+      } catch (e) {
+        this.error = e.message ?? String(e);
+        console.error('[settings] fetch', e);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async save(patch) {
+      this.saving = true;
+      this.error = null;
+      try {
+        const merged = { ...this.settings, ...patch, id: 1 };
+        const { data, error } = await supabase
+          .from('site_settings')
+          .upsert(merged, { onConflict: 'id' })
+          .select()
+          .single();
+        if (error) throw error;
+        this.settings = { ...DEFAULT_SETTINGS, ...data };
+        return data;
+      } catch (e) {
+        this.error = e.message ?? String(e);
+        throw e;
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    async uploadAsset(file, prefix = 'asset') {
+      if (!file) return null;
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const path = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from(SITE_ASSETS_BUCKET)
+        .upload(path, file, { cacheControl: '3600', upsert: false });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from(SITE_ASSETS_BUCKET).getPublicUrl(path);
+      return pub.publicUrl;
+    },
+  },
+});

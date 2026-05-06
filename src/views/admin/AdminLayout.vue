@@ -22,6 +22,12 @@
         <RouterLink to="/admin/yeni" active-class="active" class="admin-nav-link">
           <span class="admin-nav-icon">＋</span> Yeni motor
         </RouterLink>
+        <RouterLink to="/admin/kategoriler" active-class="active" class="admin-nav-link">
+          <span class="admin-nav-icon">▦</span> Kategoriler
+        </RouterLink>
+        <RouterLink to="/admin/ayarlar" active-class="active" class="admin-nav-link">
+          <span class="admin-nav-icon">⚙</span> Site ayarları
+        </RouterLink>
       </nav>
 
       <div class="admin-sidebar-bottom">

@@ -56,6 +56,8 @@ const routes = [
       { path: '', name: 'admin-list', component: () => import('./views/admin/AdminListView.vue'), meta: { robots: 'noindex, nofollow' } },
       { path: 'yeni', name: 'admin-new', component: () => import('./views/admin/AdminFormView.vue'), meta: { robots: 'noindex, nofollow' } },
       { path: 'duzenle/:id', name: 'admin-edit', component: () => import('./views/admin/AdminFormView.vue'), meta: { robots: 'noindex, nofollow' } },
+      { path: 'kategoriler', name: 'admin-categories', component: () => import('./views/admin/AdminCategoriesView.vue'), meta: { robots: 'noindex, nofollow' } },
+      { path: 'ayarlar', name: 'admin-settings', component: () => import('./views/admin/AdminSettingsView.vue'), meta: { robots: 'noindex, nofollow' } },
     ],
   },
   {

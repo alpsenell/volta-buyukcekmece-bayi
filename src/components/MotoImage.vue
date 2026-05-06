@@ -1,9 +1,9 @@
 <template>
   <div
-    v-if="motor.photo"
+    v-if="firstPhoto"
     :class="className"
     :style="{
-      backgroundImage: `url(${motor.photo})`,
+      backgroundImage: `url(${firstPhoto})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
     }"
@@ -17,9 +17,18 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import MotoSilhouette from './MotoSilhouette.vue';
-defineProps({
+
+const props = defineProps({
   motor: { type: Object, required: true },
   className: { type: String, default: '' },
+});
+
+const firstPhoto = computed(() => {
+  // Backwards-compat: support legacy `motor.photo` (single) alongside `motor.photos` (array)
+  if (Array.isArray(props.motor.photos) && props.motor.photos.length) return props.motor.photos[0];
+  if (props.motor.photo) return props.motor.photo;
+  return null;
 });
 </script>

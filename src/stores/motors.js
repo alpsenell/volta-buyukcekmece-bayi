@@ -20,7 +20,7 @@ function mapFromDb(row) {
     featured: row.featured,
     order: row.sort_order,
     description: row.description ?? '',
-    photo: row.image_url ?? null,
+    photos: row.images ?? [],
   };
 }
 
@@ -38,7 +38,7 @@ function mapToDb(m) {
     featured: m.featured,
     sort_order: m.order ?? 9999,
     description: m.description ?? null,
-    image_url: m.photo ?? null,
+    images: Array.isArray(m.photos) ? m.photos : [],
   };
 }
 

@@ -10,24 +10,12 @@
 
       <div class="detail-grid">
         <div class="detail-image-side">
-          <div class="detail-image-main">
-            <MotoImage :motor="motor" className="detail-image" />
-            <span v-if="motor.featured" class="featured-tag">Öne çıkan</span>
-          </div>
-          <div class="detail-thumbs">
-            <button
-              v-for="(c, i) in motor.colors" :key="i"
-              class="detail-thumb"
-              :class="{ active: selectedColor === i }"
-              @click="selectedColor = i"
-            >
-              <span class="thumb-color" :style="{ background: c }"></span>
-            </button>
-          </div>
+          <MotoCarousel :motor="motor" />
+          <span v-if="motor.featured" class="featured-tag" style="margin-top: 12px; align-self: flex-start;">Öne çıkan</span>
         </div>
 
         <div class="detail-info-side">
-          <div class="detail-cat">{{ CATEGORY_LABELS[motor.category] }}</div>
+          <div class="detail-cat">{{ categoryStore.labelOf(motor.category) }}</div>
           <h1 class="detail-title">{{ motor.name }}</h1>
 
           <div class="detail-meta">
@@ -59,7 +47,7 @@
             </div>
           </div>
 
-          <div class="detail-colors">
+          <div v-if="motor.colors && motor.colors.length > 1" class="detail-colors">
             <div class="detail-colors-label">Renk seçenekleri</div>
             <div class="detail-colors-row">
               <button
@@ -76,7 +64,7 @@
 
           <div class="detail-cta-row">
             <RouterLink to="/iletisim" class="btn btn-primary btn-lg">Bayiden bilgi al</RouterLink>
-            <a href="tel:+902120000000" class="btn btn-ghost btn-lg">Hemen ara</a>
+            <a v-if="phoneHref" :href="phoneHref" class="btn btn-ghost btn-lg">Hemen ara</a>
           </div>
 
           <div class="detail-note">
@@ -99,13 +87,16 @@
 import { ref, computed, watch, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 import { useMotorStore } from '../stores/motors';
-import { CATEGORY_LABELS, formatPrice } from '../data/seed';
-import MotoImage from '../components/MotoImage.vue';
+import { useCategoryStore, useSettingsStore } from '../stores/site';
+import { formatPrice } from '../data/seed';
+import MotoCarousel from '../components/MotoCarousel.vue';
 import StockBadge from '../components/StockBadge.vue';
 import MotoCard from '../components/MotoCard.vue';
 
 const route = useRoute();
 const store = useMotorStore();
+const categoryStore = useCategoryStore();
+const settingsStore = useSettingsStore();
 const selectedColor = ref(0);
 
 const motor = computed(() => store.bySlug(route.params.slug));
@@ -116,6 +107,13 @@ const related = computed(() => {
     .slice(0, 3);
 });
 
+const phoneHref = computed(() => {
+  const p = settingsStore.settings?.phone;
+  if (!p) return null;
+  const cleaned = p.replace(/[^+\d]/g, '');
+  return cleaned ? `tel:${cleaned}` : null;
+});
+
 watch(() => route.params.slug, () => { selectedColor.value = 0; });
 
 // Per-motor SEO: title + meta description + Product JSON-LD
@@ -124,8 +122,9 @@ watchEffect(() => {
   if (typeof document === 'undefined') return;
   const m = motor.value;
   if (!m) return;
+  const catLabel = categoryStore.labelOf(m.category);
   document.title = `${m.name} · Volta Motor Büyükçekmece Bayi`;
-  const desc = `${m.name} — ${CATEGORY_LABELS[m.category] || ''}. Menzil ${m.range} km, maks. hız ${m.topSpeed} km/s, şarj ${m.chargeTime} saat. ${formatPrice(m.price)}`;
+  const desc = `${m.name} — ${catLabel}. Menzil ${m.range} km, maks. hız ${m.topSpeed} km/s, şarj ${m.chargeTime} saat. ${formatPrice(m.price)}`;
   let metaDesc = document.head.querySelector('meta[name="description"]');
   if (!metaDesc) {
     metaDesc = document.createElement('meta');
@@ -134,13 +133,14 @@ watchEffect(() => {
   }
   metaDesc.setAttribute('content', desc);
 
-  // Product JSON-LD for rich results
+  const photos = Array.isArray(m.photos) ? m.photos : [];
   const ld = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: m.name,
     description: m.description || desc,
-    category: CATEGORY_LABELS[m.category] || m.category,
+    category: catLabel,
+    image: photos.length ? photos : undefined,
     brand: { '@type': 'Brand', name: 'Volta Motor' },
     offers: {
       '@type': 'Offer',

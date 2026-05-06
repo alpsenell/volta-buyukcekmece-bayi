@@ -3,15 +3,23 @@
     <div class="container footer-inner">
       <div class="footer-brand">
         <div class="brand">
-          <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32" width="28" height="28">
-              <path d="M 8 4 L 16 28 L 24 4 L 19 4 L 16 18 L 13 4 Z" fill="currentColor" />
-            </svg>
-          </span>
-          <span class="brand-text">
-            <span class="brand-name">VOLTA</span>
-            <span class="brand-sub">Büyükçekmece Bayi</span>
-          </span>
+          <img
+            v-if="settings.logo_url"
+            :src="settings.logo_url"
+            alt="Logo"
+            class="brand-logo-img"
+          />
+          <template v-else>
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 32 32" width="28" height="28">
+                <path d="M 8 4 L 16 28 L 24 4 L 19 4 L 16 18 L 13 4 Z" fill="currentColor" />
+              </svg>
+            </span>
+            <span class="brand-text">
+              <span class="brand-name">VOLTA</span>
+              <span class="brand-sub">Büyükçekmece Bayi</span>
+            </span>
+          </template>
         </div>
         <p class="footer-copy">
           Volta Motor yetkili satış ve servis bayisi. Şehir içi ulaşımdan arazi kullanımına,
@@ -27,22 +35,35 @@
           <RouterLink to="/hakkimizda">Hakkımızda</RouterLink>
           <RouterLink to="/iletisim">İletişim</RouterLink>
         </div>
-        <div>
+        <div v-if="categoryStore.sorted.length">
           <h4>Kategoriler</h4>
-          <RouterLink to="/katalog?cat=scooter">Scooter</RouterLink>
-          <RouterLink to="/katalog?cat=atv">ATV</RouterLink>
-          <RouterLink to="/katalog?cat=bike">E-Bisiklet</RouterLink>
+          <RouterLink
+            v-for="c in categoryStore.sorted"
+            :key="c.id"
+            :to="`/katalog?cat=${c.slug}`"
+          >{{ c.label }}</RouterLink>
         </div>
         <div>
           <h4>İletişim</h4>
-          <p>Atatürk Cad. No: 123<br>Büyükçekmece / İstanbul</p>
-          <p>0212 000 00 00<br>info@voltabuyukcekmece.com</p>
+          <p v-if="settings.address" style="white-space: pre-line">{{ settings.address }}</p>
+          <p v-if="settings.phone">{{ settings.phone }}</p>
+          <p v-if="settings.email">{{ settings.email }}</p>
         </div>
       </div>
     </div>
     <div class="footer-bottom container">
-      <span>© 2026 Volta Büyükçekmece Bayi · Bu site bir prototip tasarımıdır</span>
-      <span class="footer-meta">Pazartesi–Cumartesi 09:00–19:00</span>
+      <span>© {{ year }} Volta Büyükçekmece Bayi</span>
+      <span v-if="settings.working_hours" class="footer-meta">{{ settings.working_hours }}</span>
     </div>
   </footer>
 </template>
+
+<script setup>
+import { computed } from 'vue';
+import { useSettingsStore, useCategoryStore } from '../stores/site';
+
+const settingsStore = useSettingsStore();
+const categoryStore = useCategoryStore();
+const settings = computed(() => settingsStore.settings);
+const year = new Date().getFullYear();
+</script>

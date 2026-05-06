@@ -10,34 +10,47 @@
 
     <section class="container contact-grid">
       <div class="contact-info">
-        <div class="contact-item">
+        <div v-if="settings.address" class="contact-item">
           <div class="contact-label">Adres</div>
+          <div class="contact-value" style="white-space: pre-line">{{ settings.address }}</div>
+        </div>
+        <div v-if="settings.phone" class="contact-item">
+          <div class="contact-label">Telefon</div>
           <div class="contact-value">
-            Atatürk Caddesi No: 123<br>
-            Mimarsinan / Büyükçekmece<br>
-            İstanbul
+            <a v-if="phoneHref" :href="phoneHref">{{ settings.phone }}</a>
+            <span v-else>{{ settings.phone }}</span>
           </div>
         </div>
-        <div class="contact-item">
-          <div class="contact-label">Telefon</div>
-          <div class="contact-value"><a href="tel:+902120000000">0212 000 00 00</a></div>
-        </div>
-        <div class="contact-item">
+        <div v-if="settings.email" class="contact-item">
           <div class="contact-label">E-posta</div>
-          <div class="contact-value"><a href="mailto:info@voltabuyukcekmece.com">info@voltabuyukcekmece.com</a></div>
+          <div class="contact-value"><a :href="`mailto:${settings.email}`">{{ settings.email }}</a></div>
         </div>
-        <div class="contact-item">
+        <div v-if="settings.working_hours" class="contact-item">
           <div class="contact-label">Çalışma saatleri</div>
-          <div class="contact-value">
-            Pazartesi–Cuma · 09:00–19:00<br>
-            Cumartesi · 10:00–18:00<br>
-            Pazar · Kapalı
+          <div class="contact-value" style="white-space: pre-line">{{ settings.working_hours }}</div>
+        </div>
+        <div v-if="hasSocial" class="contact-item">
+          <div class="contact-label">Sosyal medya</div>
+          <div class="contact-value" style="display: flex; gap: 12px; flex-wrap: wrap">
+            <a v-if="settings.social_instagram" :href="settings.social_instagram" target="_blank" rel="noopener">Instagram</a>
+            <a v-if="settings.social_facebook" :href="settings.social_facebook" target="_blank" rel="noopener">Facebook</a>
+            <a v-if="settings.social_youtube" :href="settings.social_youtube" target="_blank" rel="noopener">YouTube</a>
           </div>
         </div>
       </div>
 
       <div class="contact-map">
-        <div class="map-placeholder">
+        <iframe
+          v-if="hasMap"
+          :src="mapEmbed"
+          width="100%"
+          height="100%"
+          style="border:0; min-height: 360px;"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          :title="`Konum: ${settings.address || 'Volta Büyükçekmece Bayi'}`"
+        ></iframe>
+        <div v-else class="map-placeholder">
           <svg viewBox="0 0 600 400" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
             <defs>
               <pattern id="map-grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -48,11 +61,6 @@
             <rect width="600" height="400" fill="url(#map-grid)"/>
             <path d="M 0 200 Q 200 180, 350 220 T 600 200" stroke="#a8a29e" stroke-width="14" fill="none"/>
             <path d="M 0 200 Q 200 180, 350 220 T 600 200" stroke="#fff" stroke-width="10" fill="none"/>
-            <path d="M 280 0 L 320 400" stroke="#a8a29e" stroke-width="10" fill="none"/>
-            <path d="M 280 0 L 320 400" stroke="#fff" stroke-width="6" fill="none"/>
-            <rect x="80" y="60" width="140" height="90" fill="#dcfce7" opacity="0.7" rx="6"/>
-            <rect x="420" y="240" width="120" height="100" fill="#dcfce7" opacity="0.7" rx="6"/>
-            <path d="M 0 360 L 600 380 L 600 400 L 0 400 Z" fill="#bae6fd" opacity="0.5"/>
             <g transform="translate(310, 200)">
               <circle r="28" fill="#95c121" opacity="0.25"/>
               <circle r="14" fill="#95c121"/>
@@ -61,7 +69,7 @@
           </svg>
           <div class="map-tag">
             <strong>Volta Büyükçekmece Bayi</strong>
-            <span>Atatürk Cd. No:123</span>
+            <span v-if="settings.address">{{ firstLine(settings.address) }}</span>
           </div>
         </div>
       </div>
@@ -94,7 +102,41 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, ref, computed } from 'vue';
+import { useSettingsStore } from '../stores/site';
+
+const settingsStore = useSettingsStore();
+const settings = computed(() => settingsStore.settings);
+
+const phoneHref = computed(() => {
+  const p = settings.value.phone;
+  if (!p) return null;
+  const cleaned = p.replace(/[^+\d]/g, '');
+  return cleaned ? `tel:${cleaned}` : null;
+});
+
+const hasMap = computed(() =>
+  Number.isFinite(Number(settings.value.map_lat)) &&
+  Number.isFinite(Number(settings.value.map_lng))
+);
+
+const mapEmbed = computed(() => {
+  if (!hasMap.value) return '';
+  const lat = Number(settings.value.map_lat);
+  const lng = Number(settings.value.map_lng);
+  // OpenStreetMap embed — no API key required.
+  const d = 0.005;
+  const bbox = `${lng - d}%2C${lat - d}%2C${lng + d}%2C${lat + d}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
+});
+
+const hasSocial = computed(() =>
+  !!(settings.value.social_instagram || settings.value.social_facebook || settings.value.social_youtube)
+);
+
+function firstLine(s) {
+  return String(s).split('\n')[0];
+}
 
 const form = reactive({ name: '', phone: '', message: '' });
 const sent = ref(false);

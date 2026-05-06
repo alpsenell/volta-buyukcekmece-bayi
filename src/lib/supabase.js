@@ -18,3 +18,4 @@ export const supabase = createClient(url ?? '', anonKey ?? '', {
 });
 
 export const PHOTOS_BUCKET = 'motor-photos';
+export const SITE_ASSETS_BUCKET = 'site-assets';
