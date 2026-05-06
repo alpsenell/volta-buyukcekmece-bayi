@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "volta-bayi-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/alpsenel/Desktop/PersonalProjects/volta-buyukcekmece-bayi",
+      "port": 5173
+    }
+  ]
+}

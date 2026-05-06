@@ -1,0 +1,126 @@
+import { createRouter, createWebHistory } from 'vue-router';
+import { useAuthStore } from './stores/motors';
+
+const SITE_NAME = 'Volta Motor Büyükçekmece Bayi';
+const DEFAULT_DESC = 'Volta Motor Büyükçekmece yetkili bayi. Elektrikli scooter, ATV ve elektrikli bisiklet modelleri, fiyatlar ve özellikler.';
+
+const routes = [
+  {
+    path: '/',
+    name: 'home',
+    component: () => import('./views/HomeView.vue'),
+    meta: {
+      title: `${SITE_NAME} · Elektrikli Scooter, ATV, Bisiklet`,
+      description: DEFAULT_DESC,
+    },
+  },
+  {
+    path: '/katalog',
+    name: 'catalog',
+    component: () => import('./views/CatalogView.vue'),
+    meta: {
+      title: `Motor Kataloğu · ${SITE_NAME}`,
+      description: 'Tüm Volta Motor modelleri — elektrikli scooter, ATV ve bisiklet. Fiyat, menzil ve özelliklere göre filtreleyin.',
+    },
+  },
+  {
+    path: '/motor/:slug',
+    name: 'detail',
+    component: () => import('./views/DetailView.vue'),
+    meta: { title: `Motor Detayı · ${SITE_NAME}`, description: DEFAULT_DESC },
+  },
+  {
+    path: '/hakkimizda',
+    name: 'about',
+    component: () => import('./views/AboutView.vue'),
+    meta: {
+      title: `Hakkımızda · ${SITE_NAME}`,
+      description: 'Volta Motor Büyükçekmece bayisi olarak elektrikli mobilite çözümlerinde sizi destekliyoruz.',
+    },
+  },
+  {
+    path: '/iletisim',
+    name: 'contact',
+    component: () => import('./views/ContactView.vue'),
+    meta: {
+      title: `İletişim · ${SITE_NAME}`,
+      description: 'Volta Motor Büyükçekmece bayi adresi, telefon ve iletişim formu.',
+    },
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('./views/admin/AdminLayout.vue'),
+    meta: { title: `Yönetim · ${SITE_NAME}`, robots: 'noindex, nofollow' },
+    children: [
+      { path: '', name: 'admin-list', component: () => import('./views/admin/AdminListView.vue'), meta: { robots: 'noindex, nofollow' } },
+      { path: 'yeni', name: 'admin-new', component: () => import('./views/admin/AdminFormView.vue'), meta: { robots: 'noindex, nofollow' } },
+      { path: 'duzenle/:id', name: 'admin-edit', component: () => import('./views/admin/AdminFormView.vue'), meta: { robots: 'noindex, nofollow' } },
+    ],
+  },
+  {
+    path: '/admin-login',
+    name: 'admin-login',
+    component: () => import('./views/admin/AdminLoginView.vue'),
+    meta: { title: `Yönetim Girişi · ${SITE_NAME}`, robots: 'noindex, nofollow' },
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    component: () => import('./views/NotFoundView.vue'),
+    meta: { title: `Sayfa bulunamadı · ${SITE_NAME}`, robots: 'noindex' },
+  },
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+  scrollBehavior() { return { top: 0 }; },
+});
+
+// Admin guard
+router.beforeEach((to) => {
+  if (to.path.startsWith('/admin') && to.name !== 'admin-login') {
+    const auth = useAuthStore();
+    if (!auth.isAuthed) {
+      return { name: 'admin-login' };
+    }
+  }
+});
+
+// SEO: per-route title, meta description, robots, canonical
+router.afterEach((to) => {
+  if (typeof document === 'undefined') return;
+
+  if (to.meta?.title) document.title = to.meta.title;
+
+  const setMeta = (selector, attr, value) => {
+    if (!value) return;
+    let el = document.head.querySelector(selector);
+    if (!el) {
+      el = document.createElement('meta');
+      const [, name] = selector.match(/\[(?:name|property)="([^"]+)"\]/) || [];
+      if (selector.includes('property=')) el.setAttribute('property', name);
+      else el.setAttribute('name', name);
+      document.head.appendChild(el);
+    }
+    el.setAttribute(attr, value);
+  };
+
+  setMeta('meta[name="description"]', 'content', to.meta?.description || DEFAULT_DESC);
+  setMeta('meta[property="og:title"]', 'content', to.meta?.title || SITE_NAME);
+  setMeta('meta[property="og:description"]', 'content', to.meta?.description || DEFAULT_DESC);
+  setMeta('meta[name="robots"]', 'content', to.meta?.robots || 'index, follow, max-image-preview:large');
+
+  const origin = window.location.origin;
+  let canonical = document.head.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement('link');
+    canonical.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonical);
+  }
+  canonical.setAttribute('href', origin + to.path);
+
+  setMeta('meta[property="og:url"]', 'content', origin + to.path);
+});
+
+export default router;
