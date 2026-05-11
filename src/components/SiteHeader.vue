@@ -23,13 +23,53 @@
 
       <nav class="site-nav" :class="{ open: menuOpen }">
         <RouterLink
-          v-for="l in links" :key="l.path"
-          :to="l.path"
+          to="/"
           class="nav-link"
           active-class="active"
-          :exact-active-class="l.path === '/' ? 'active' : ''"
+          exact-active-class="active"
           @click="menuOpen = false"
-        >{{ l.label }}</RouterLink>
+        >Ana Sayfa</RouterLink>
+
+        <div class="nav-dropdown">
+          <RouterLink
+            to="/katalog"
+            class="nav-link nav-dropdown-trigger"
+            active-class="active"
+            @click="menuOpen = false"
+          >
+            Modeller
+            <span v-if="categoryStore.sorted.length" class="nav-caret" aria-hidden="true">▾</span>
+          </RouterLink>
+          <div
+            v-if="categoryStore.sorted.length"
+            class="nav-dropdown-menu"
+            role="menu"
+          >
+            <RouterLink
+              to="/katalog"
+              class="nav-dropdown-item"
+              @click="menuOpen = false"
+            >
+              <span class="nav-dropdown-label">Tüm modeller</span>
+              <span class="nav-dropdown-count">{{ motorCount }}</span>
+            </RouterLink>
+            <div class="nav-dropdown-sep" aria-hidden="true"></div>
+            <RouterLink
+              v-for="c in categoryStore.sorted"
+              :key="c.id"
+              :to="`/katalog?cat=${c.slug}`"
+              class="nav-dropdown-item"
+              @click="menuOpen = false"
+            >
+              <span class="nav-dropdown-label">{{ c.label }}</span>
+              <span class="nav-dropdown-count">{{ countOf(c.slug) }}</span>
+            </RouterLink>
+          </div>
+        </div>
+
+        <RouterLink to="/hakkimizda" class="nav-link" active-class="active" @click="menuOpen = false">Hakkımızda</RouterLink>
+        <RouterLink to="/sss" class="nav-link" active-class="active" @click="menuOpen = false">SSS</RouterLink>
+        <RouterLink to="/iletisim" class="nav-link" active-class="active" @click="menuOpen = false">İletişim</RouterLink>
       </nav>
 
       <div class="header-actions">
@@ -50,10 +90,14 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { useSettingsStore } from '../stores/site';
+import { useSettingsStore, useCategoryStore } from '../stores/site';
+import { useMotorStore } from '../stores/motors';
 
 const menuOpen = ref(false);
 const settingsStore = useSettingsStore();
+const categoryStore = useCategoryStore();
+const motorStore = useMotorStore();
+
 const settings = computed(() => settingsStore.settings);
 
 const phoneHref = computed(() => {
@@ -63,11 +107,8 @@ const phoneHref = computed(() => {
   return cleaned ? `tel:${cleaned}` : null;
 });
 
-const links = [
-  { path: '/', label: 'Ana Sayfa' },
-  { path: '/katalog', label: 'Modeller' },
-  { path: '/hakkimizda', label: 'Hakkımızda' },
-  { path: '/sss', label: 'SSS' },
-  { path: '/iletisim', label: 'İletişim' },
-];
+const motorCount = computed(() => motorStore.motors.length);
+function countOf(slug) {
+  return motorStore.motors.filter((m) => m.category === slug).length;
+}
 </script>

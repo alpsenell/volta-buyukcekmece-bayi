@@ -83,6 +83,8 @@
         </div>
       </section>
     </div>
+
+    <RecentlyViewed :exclude-id="motor.id" :limit="4" />
   </main>
 </template>
 
@@ -95,11 +97,14 @@ import { formatPrice } from '../data/seed';
 import MotoCarousel from '../components/MotoCarousel.vue';
 import StockBadge from '../components/StockBadge.vue';
 import MotoCard from '../components/MotoCard.vue';
+import RecentlyViewed from '../components/RecentlyViewed.vue';
+import { useRecentStore } from '../stores/recent';
 
 const route = useRoute();
 const store = useMotorStore();
 const categoryStore = useCategoryStore();
 const settingsStore = useSettingsStore();
+const recentStore = useRecentStore();
 const selectedColor = ref(0);
 
 const motor = computed(() => store.bySlug(route.params.slug));
@@ -161,6 +166,13 @@ const phoneHref = computed(() => {
 });
 
 watch(() => route.params.slug, () => { selectedColor.value = 0; });
+
+// Track this motor as recently viewed once it's loaded (or when route changes).
+watch(
+  () => motor.value?.id,
+  (id) => { if (id) recentStore.track(id); },
+  { immediate: true }
+);
 
 // Per-motor SEO: title + meta description + Product JSON-LD
 let jsonLdEl = null;

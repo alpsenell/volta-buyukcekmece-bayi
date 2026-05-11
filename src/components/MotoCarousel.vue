@@ -1,6 +1,10 @@
 <template>
   <div class="moto-carousel">
-    <div class="moto-carousel-stage">
+    <div
+      class="moto-carousel-stage"
+      @touchstart="onTouchStart"
+      @touchend="onTouchEnd"
+    >
       <div
         v-if="hasPhotos"
         class="moto-carousel-slide"
@@ -28,6 +32,19 @@
         @click="next"
         aria-label="Sonraki fotoğraf"
       >›</button>
+    </div>
+
+    <div
+      v-if="activePhotos.length > 1"
+      class="moto-carousel-dots"
+      aria-hidden="true"
+    >
+      <span
+        v-for="(_, i) in activePhotos"
+        :key="i"
+        class="moto-carousel-dot"
+        :class="{ active: i === index }"
+      ></span>
     </div>
 
     <div v-if="activePhotos.length > 1" class="moto-carousel-thumbs">
@@ -84,5 +101,30 @@ function prev() {
 function next() {
   if (!activePhotos.value.length) return;
   index.value = (index.value + 1) % activePhotos.value.length;
+}
+
+// Touch swipe support — distinguishes horizontal swipes (change image)
+// from vertical (let the page scroll naturally).
+const SWIPE_THRESHOLD = 40;
+let touchStartX = null;
+let touchStartY = null;
+
+function onTouchStart(e) {
+  const t = e.touches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+}
+
+function onTouchEnd(e) {
+  if (touchStartX == null || !activePhotos.value.length) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  touchStartX = null;
+  touchStartY = null;
+  if (Math.abs(dx) < SWIPE_THRESHOLD) return;
+  if (Math.abs(dy) > Math.abs(dx)) return; // mostly-vertical → ignore
+  if (dx > 0) prev();
+  else next();
 }
 </script>

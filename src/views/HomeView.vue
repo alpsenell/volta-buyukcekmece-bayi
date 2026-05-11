@@ -107,6 +107,8 @@
       </div>
     </section>
 
+    <RecentlyViewed :limit="4" />
+
     <!-- Neden biz -->
     <section class="why-section">
       <div class="container">
@@ -160,6 +162,7 @@ import { useCategoryStore, useSettingsStore } from '../stores/site';
 import { formatPrice } from '../data/seed';
 import MotoCard from '../components/MotoCard.vue';
 import MotoImage from '../components/MotoImage.vue';
+import RecentlyViewed from '../components/RecentlyViewed.vue';
 
 const store = useMotorStore();
 const categoryStore = useCategoryStore();

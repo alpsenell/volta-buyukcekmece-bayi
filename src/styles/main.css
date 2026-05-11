@@ -2387,3 +2387,148 @@ img { max-width: 100%; display: block; }
 
 /* The old per-photo dropdown is gone; keep .photo-color-swatch as an
    at-a-glance indicator on bound photos. */
+
+/* =========================================================================
+   Header: categories dropdown under "Modeller"
+   ========================================================================= */
+.nav-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.nav-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.nav-caret {
+  font-size: 11px;
+  line-height: 1;
+  transition: transform 150ms ease;
+  color: var(--muted);
+}
+.nav-dropdown:hover .nav-caret,
+.nav-dropdown:focus-within .nav-caret {
+  transform: translateY(1px);
+  color: var(--ink-2);
+}
+.nav-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  display: none;
+  z-index: 50;
+}
+.nav-dropdown::before {
+  /* invisible hover bridge between trigger and menu */
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 10px;
+  pointer-events: none;
+}
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown:focus-within .nav-dropdown-menu {
+  display: block;
+}
+.nav-dropdown::before { pointer-events: auto; }
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: background 120ms ease, color 120ms ease;
+}
+.nav-dropdown-item:hover,
+.nav-dropdown-item.router-link-active {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.nav-dropdown-label { font-weight: 500; }
+.nav-dropdown-count {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  background: var(--surface-2);
+  padding: 2px 8px;
+  border-radius: 999px;
+  min-width: 22px;
+  text-align: center;
+}
+.nav-dropdown-item:hover .nav-dropdown-count {
+  background: var(--surface);
+}
+.nav-dropdown-sep {
+  height: 1px;
+  background: var(--line);
+  margin: 4px 0;
+}
+
+/* Mobile: when hamburger menu is open, render the dropdown inline as
+   indented child links rather than as a floating popover. */
+@media (max-width: 760px) {
+  .nav-dropdown { display: block; width: 100%; }
+  .nav-dropdown-trigger { width: 100%; }
+  .nav-dropdown-menu {
+    position: static;
+    transform: none;
+    display: block !important;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+    padding: 4px 0 8px 20px;
+    min-width: 0;
+  }
+  .nav-dropdown-item {
+    padding: 8px 6px;
+    font-size: 13.5px;
+  }
+  .nav-dropdown-sep { margin: 4px 0 4px 6px; }
+  .nav-dropdown::before { display: none; }
+}
+
+/* =========================================================================
+   Carousel: pagination dots + swipe-friendly stage
+   ========================================================================= */
+.moto-carousel-stage {
+  touch-action: pan-y;       /* allow vertical page scroll, capture horizontal */
+  user-select: none;
+}
+.moto-carousel-dots {
+  display: none;
+  gap: 6px;
+  justify-content: center;
+  padding-top: 4px;
+}
+.moto-carousel-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-2);
+  transition: background 150ms ease, transform 150ms ease;
+}
+.moto-carousel-dot.active {
+  background: var(--primary);
+  transform: scale(1.2);
+}
+@media (max-width: 760px) {
+  /* On mobile, hide the prev/next arrows + thumbnail strip;
+     show pagination dots instead, swipe to navigate. */
+  .moto-carousel-arrow { display: none; }
+  .moto-carousel-thumbs { display: none; }
+  .moto-carousel-dots { display: flex; }
+}
