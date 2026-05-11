@@ -48,6 +48,15 @@ const routes = [
     },
   },
   {
+    path: '/sss',
+    name: 'faq',
+    component: () => import('./views/FaqView.vue'),
+    meta: {
+      title: `Sıkça sorulan sorular · ${SITE_NAME}`,
+      description: 'Volta Motor Büyükçekmece bayisi — sıkça sorulan sorular ve cevapları. Satış, servis, garanti ve test sürüşü hakkında bilgi.',
+    },
+  },
+  {
     path: '/admin',
     name: 'admin',
     component: () => import('./views/admin/AdminLayout.vue'),
@@ -57,6 +66,7 @@ const routes = [
       { path: 'yeni', name: 'admin-new', component: () => import('./views/admin/AdminFormView.vue'), meta: { robots: 'noindex, nofollow' } },
       { path: 'duzenle/:id', name: 'admin-edit', component: () => import('./views/admin/AdminFormView.vue'), meta: { robots: 'noindex, nofollow' } },
       { path: 'kategoriler', name: 'admin-categories', component: () => import('./views/admin/AdminCategoriesView.vue'), meta: { robots: 'noindex, nofollow' } },
+      { path: 'sss', name: 'admin-faqs', component: () => import('./views/admin/AdminFaqsView.vue'), meta: { robots: 'noindex, nofollow' } },
       { path: 'ayarlar', name: 'admin-settings', component: () => import('./views/admin/AdminSettingsView.vue'), meta: { robots: 'noindex, nofollow' } },
     ],
   },

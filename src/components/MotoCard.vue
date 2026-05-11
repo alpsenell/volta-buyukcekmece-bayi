@@ -18,7 +18,10 @@
     </div>
     <div class="moto-card-price-wrap">
       <div class="moto-card-price-label">Bayi fiyatı</div>
-      <div class="moto-card-price">{{ formatPrice(motor.price) }}</div>
+      <div class="moto-card-price-stack">
+        <span v-if="onSale" class="moto-card-compare">{{ formatPrice(motor.comparePrice) }}</span>
+        <span class="moto-card-price">{{ formatPrice(motor.price) }}</span>
+      </div>
       <button class="btn-link">İncele →</button>
     </div>
   </article>
@@ -27,6 +30,7 @@
     <div class="moto-card-image-wrap">
       <MotoImage :motor="motor" className="moto-card-image" />
       <span v-if="motor.featured" class="featured-tag">Öne çıkan</span>
+      <span v-if="onSale" class="sale-tag">İndirim</span>
       <StockBadge :in-stock="motor.inStock" />
     </div>
     <div class="moto-card-body">
@@ -41,13 +45,17 @@
       </div>
       <div class="moto-card-bottom">
         <ColorDots :colors="motor.colors" />
-        <div class="moto-card-price">{{ formatPrice(motor.price) }}</div>
+        <div class="moto-card-price-stack inline">
+          <span v-if="onSale" class="moto-card-compare">{{ formatPrice(motor.comparePrice) }}</span>
+          <span class="moto-card-price">{{ formatPrice(motor.price) }}</span>
+        </div>
       </div>
     </div>
   </article>
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import MotoImage from './MotoImage.vue';
 import StockBadge from './StockBadge.vue';
@@ -66,4 +74,9 @@ const router = useRouter();
 function goDetail() {
   router.push(`/motor/${props.motor.slug}`);
 }
+
+const onSale = computed(() => {
+  const cp = Number(props.motor.comparePrice);
+  return Number.isFinite(cp) && cp > Number(props.motor.price);
+});
 </script>

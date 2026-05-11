@@ -67,6 +67,7 @@ const links = [
   { path: '/', label: 'Ana Sayfa' },
   { path: '/katalog', label: 'Motorlar' },
   { path: '/hakkimizda', label: 'Hakkımızda' },
+  { path: '/sss', label: 'SSS' },
   { path: '/iletisim', label: 'İletişim' },
 ];
 </script>

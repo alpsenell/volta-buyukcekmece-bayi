@@ -45,6 +45,7 @@
             <th>Model</th>
             <th>Kategori</th>
             <th>Fiyat</th>
+            <th>Yayında</th>
             <th>Stok</th>
             <th>Öne çıkan</th>
             <th class="col-actions">İşlem</th>
@@ -70,7 +71,22 @@
               <div class="admin-cell-sub">/{{ m.slug }}</div>
             </td>
             <td>{{ categoryStore.labelOf(m.category) }}</td>
-            <td class="num">{{ formatPrice(m.price) }}</td>
+            <td class="num">
+              <div>{{ formatPrice(m.price) }}</div>
+              <div v-if="onSale(m)" class="admin-cell-sub" style="text-decoration: line-through">
+                {{ formatPrice(m.comparePrice) }}
+              </div>
+            </td>
+            <td>
+              <button
+                class="toggle-pill"
+                :class="m.visible ? 'on' : 'off'"
+                @click="toggleVisible(m)"
+                :title="m.visible ? 'Siteye görünür' : 'Yalnızca admin görür'"
+              >
+                {{ m.visible ? 'Yayında' : 'Gizli' }}
+              </button>
+            </td>
             <td>
               <button
                 class="toggle-pill"
@@ -149,6 +165,16 @@ async function toggleStock(m) {
 async function toggleFeatured(m) {
   try { await store.updateMotor(m.id, { featured: !m.featured }); }
   catch (e) { alert('Güncellenemedi: ' + (e.message || e)); }
+}
+
+async function toggleVisible(m) {
+  try { await store.updateMotor(m.id, { visible: !m.visible }); }
+  catch (e) { alert('Güncellenemedi: ' + (e.message || e)); }
+}
+
+function onSale(m) {
+  const cp = Number(m.comparePrice);
+  return Number.isFinite(cp) && cp > Number(m.price);
 }
 
 function refresh() {

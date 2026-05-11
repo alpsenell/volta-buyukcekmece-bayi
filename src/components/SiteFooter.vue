@@ -33,6 +33,7 @@
           <RouterLink to="/">Ana Sayfa</RouterLink>
           <RouterLink to="/katalog">Motorlar</RouterLink>
           <RouterLink to="/hakkimizda">Hakkımızda</RouterLink>
+          <RouterLink to="/sss">SSS</RouterLink>
           <RouterLink to="/iletisim">İletişim</RouterLink>
         </div>
         <div v-if="categoryStore.sorted.length">

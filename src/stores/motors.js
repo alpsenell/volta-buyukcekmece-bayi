@@ -12,15 +12,18 @@ function mapFromDb(row) {
     name: row.name,
     category: row.category,
     price: Number(row.price),
+    comparePrice: row.compare_price == null ? null : Number(row.compare_price),
     range: row.range_km,
     topSpeed: row.top_speed,
     chargeTime: Number(row.charge_hours),
     colors: row.colors ?? [],
     inStock: row.in_stock,
     featured: row.featured,
+    visible: row.visible ?? true,
     order: row.sort_order,
     description: row.description ?? '',
     photos: row.images ?? [],
+    photoColors: row.photo_colors ?? [],
   };
 }
 
@@ -30,15 +33,18 @@ function mapToDb(m) {
     name: m.name,
     category: m.category,
     price: m.price,
+    compare_price: m.comparePrice == null || m.comparePrice === '' ? null : Number(m.comparePrice),
     range_km: m.range,
     top_speed: m.topSpeed,
     charge_hours: m.chargeTime,
     colors: m.colors ?? [],
     in_stock: m.inStock,
     featured: m.featured,
+    visible: m.visible ?? true,
     sort_order: m.order ?? 9999,
     description: m.description ?? null,
     images: Array.isArray(m.photos) ? m.photos : [],
+    photo_colors: Array.isArray(m.photoColors) ? m.photoColors : [],
   };
 }
 

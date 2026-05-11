@@ -184,3 +184,80 @@ export const useSettingsStore = defineStore('settings', {
     },
   },
 });
+
+// =========================================================================
+// FAQ store — admin-managed Q&A list. RLS filters hidden rows for anon.
+// =========================================================================
+export const useFaqStore = defineStore('faqs', {
+  state: () => ({
+    faqs: [],
+    loading: false,
+    loaded: false,
+    error: null,
+  }),
+
+  getters: {
+    sorted: (state) =>
+      [...state.faqs].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999)),
+    visibleSorted: (state) =>
+      state.faqs
+        .filter((f) => f.visible !== false)
+        .sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999)),
+  },
+
+  actions: {
+    async fetchAll(force = false) {
+      if (this.loaded && !force) return;
+      this.loading = true;
+      this.error = null;
+      try {
+        const { data, error } = await supabase
+          .from('faqs')
+          .select('*')
+          .order('sort_order', { ascending: true });
+        if (error) throw error;
+        this.faqs = data ?? [];
+        this.loaded = true;
+      } catch (e) {
+        this.error = e.message ?? String(e);
+        console.error('[faqs] fetchAll', e);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async addFaq({ question, answer, sort_order = 9999, visible = true }) {
+      const payload = { question: question.trim(), answer: answer.trim(), sort_order, visible };
+      const { data, error } = await supabase
+        .from('faqs')
+        .insert(payload)
+        .select()
+        .single();
+      if (error) throw error;
+      this.faqs.push(data);
+      return data;
+    },
+
+    async updateFaq(id, patch) {
+      const payload = { ...patch };
+      if (payload.question) payload.question = payload.question.trim();
+      if (payload.answer) payload.answer = payload.answer.trim();
+      const { data, error } = await supabase
+        .from('faqs')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      const idx = this.faqs.findIndex((f) => f.id === id);
+      if (idx >= 0) this.faqs[idx] = data;
+      return data;
+    },
+
+    async deleteFaq(id) {
+      const { error } = await supabase.from('faqs').delete().eq('id', id);
+      if (error) throw error;
+      this.faqs = this.faqs.filter((f) => f.id !== id);
+    },
+  },
+});

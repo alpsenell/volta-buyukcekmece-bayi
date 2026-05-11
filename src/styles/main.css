@@ -1969,3 +1969,161 @@ img { max-width: 100%; display: block; }
   font-size: 24px;
   color: var(--muted-2);
 }
+
+/* =========================================================================
+   Sale / compare price
+   ========================================================================= */
+.sale-tag {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  z-index: 2;
+}
+.moto-card-compare {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  margin-right: 6px;
+}
+.moto-card-price-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+.moto-card-price-stack.inline {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+}
+.detail-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.detail-compare-price {
+  font-size: 18px;
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+.detail-discount-badge {
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+/* =========================================================================
+   FAQ page (public)
+   ========================================================================= */
+.faq-page {
+  padding-bottom: 80px;
+}
+.faq-section {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 880px;
+}
+.faq-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.faq-item {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 150ms ease;
+}
+.faq-item.open {
+  border-color: var(--primary);
+}
+.faq-question {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 20px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink);
+  font-family: inherit;
+}
+.faq-question:hover { background: var(--surface-2); }
+.faq-chevron {
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--primary);
+  flex-shrink: 0;
+  line-height: 1;
+}
+.faq-answer {
+  padding: 0 20px 20px;
+  color: var(--ink-3);
+  line-height: 1.7;
+  white-space: pre-line;
+}
+.faq-cta-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 28px 32px;
+  background: var(--primary-bg);
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+}
+.faq-cta-card h3 { margin: 0 0 4px; font-size: 18px; }
+.faq-cta-card p { margin: 0; color: var(--ink-3); }
+
+/* =========================================================================
+   Admin photo color tag UI
+   ========================================================================= */
+.photo-color-tag {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  font-size: 10px;
+  padding: 2px 4px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.95);
+  border-radius: 4px;
+  max-width: 80px;
+  cursor: pointer;
+  z-index: 1;
+}
+.photo-color-swatch {
+  position: absolute;
+  bottom: 7px;
+  left: 7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--line);
+}

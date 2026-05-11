@@ -33,7 +33,20 @@
                 <span>Fiyat (₺)</span>
                 <input type="number" v-model.number="form.price" required min="0" step="100" />
               </label>
+              <label class="field">
+                <span>Karşılaştırma fiyatı (₺)</span>
+                <input
+                  type="number"
+                  v-model.number="form.comparePrice"
+                  min="0"
+                  step="100"
+                  placeholder="Boş bırakın"
+                />
+              </label>
             </div>
+            <small v-if="hasValidComparePrice" style="color: var(--muted); display: block; margin-top: -4px;">
+              Karşılaştırma fiyatı, mevcut fiyatın üstünde olmalıdır — üzeri çizili olarak gösterilir.
+            </small>
             <label class="field">
               <span>Açıklama</span>
               <textarea v-model="form.description" rows="4" placeholder="Modelin kısa tanıtımı..."></textarea>
@@ -80,6 +93,10 @@
             <h3>Durum</h3>
             <div class="checkbox-row">
               <label class="checkbox">
+                <input type="checkbox" v-model="form.visible" />
+                <span>Yayında (siteye görünür)</span>
+              </label>
+              <label class="checkbox">
                 <input type="checkbox" v-model="form.inStock" />
                 <span>Stokta var</span>
               </label>
@@ -88,6 +105,9 @@
                 <span>Öne çıkar</span>
               </label>
             </div>
+            <small style="color: var(--muted); display: block; margin-top: 8px;">
+              "Yayında" kapatılırsa motor herkese gizlenir — yalnızca admin panelden görünür kalır.
+            </small>
           </div>
         </div>
 
@@ -119,6 +139,23 @@
                       title="Sil"
                     >×</button>
                   </div>
+                  <select
+                    class="photo-color-tag"
+                    :value="form.photoColors[i] || ''"
+                    @change="setPhotoColor(i, $event.target.value)"
+                    @click.stop
+                    @mousedown.stop
+                    title="Renk etiketi"
+                  >
+                    <option value="">Tümü</option>
+                    <option v-for="c in form.colors" :key="c" :value="c">{{ c }}</option>
+                  </select>
+                  <span
+                    v-if="form.photoColors[i]"
+                    class="photo-color-swatch"
+                    :style="{ background: form.photoColors[i] }"
+                    aria-hidden="true"
+                  ></span>
                 </div>
 
                 <label
@@ -195,6 +232,7 @@ const blank = {
   name: '',
   category: '',
   price: 0,
+  comparePrice: null,
   description: '',
   range: 50,
   topSpeed: 40,
@@ -202,8 +240,15 @@ const blank = {
   colors: ['#0a0a0a', '#95c121'],
   inStock: true,
   featured: false,
+  visible: true,
   photos: [],
+  photoColors: [],
 };
+
+const hasValidComparePrice = computed(() =>
+  Number.isFinite(Number(form.comparePrice)) &&
+  Number(form.comparePrice) > Number(form.price || 0)
+);
 
 const form = reactive({ ...blank });
 
@@ -219,6 +264,11 @@ onMounted(async () => {
     if (existing) {
       Object.assign(form, JSON.parse(JSON.stringify(existing)));
       if (!Array.isArray(form.photos)) form.photos = [];
+      if (!Array.isArray(form.photoColors)) form.photoColors = [];
+      // Normalise parallel arrays: photoColors must match photos length
+      while (form.photoColors.length < form.photos.length) form.photoColors.push('');
+      form.photoColors = form.photoColors.slice(0, form.photos.length);
+      if (form.visible == null) form.visible = true;
     }
   }
 });
@@ -241,9 +291,28 @@ const previewMotor = computed(() => ({
 }));
 
 function addColor() { form.colors.push('#dddddd'); }
-function updateColor(i, val) { form.colors[i] = val; }
+function updateColor(i, val) {
+  const old = form.colors[i];
+  form.colors[i] = val;
+  // Migrate any photo tags using the old color to the new one
+  if (old && old !== val) {
+    form.photoColors = form.photoColors.map((c) => (c === old ? val : c));
+  }
+}
 function removeColor(i) {
-  if (form.colors.length > 1) form.colors.splice(i, 1);
+  if (form.colors.length > 1) {
+    const removed = form.colors[i];
+    form.colors.splice(i, 1);
+    // Untag any photos that were bound to the removed color
+    if (removed) {
+      form.photoColors = form.photoColors.map((c) => (c === removed ? '' : c));
+    }
+  }
+}
+
+function setPhotoColor(i, color) {
+  while (form.photoColors.length <= i) form.photoColors.push('');
+  form.photoColors[i] = color || '';
 }
 
 // ---- Photos ----
@@ -264,7 +333,10 @@ async function handleFiles(files) {
     for (const file of files) {
       if (!file.type.startsWith('image/')) continue;
       const url = await store.uploadPhoto(file);
-      if (url) form.photos.push(url);
+      if (url) {
+        form.photos.push(url);
+        form.photoColors.push(''); // start untagged
+      }
     }
   } catch (e) {
     error.value = 'Fotoğraf yüklenemedi: ' + (e.message || e);
@@ -274,6 +346,7 @@ async function handleFiles(files) {
 }
 function removePhoto(i) {
   form.photos.splice(i, 1);
+  form.photoColors.splice(i, 1);
 }
 function onPhotoDragStart(i, e) {
   dragIndex.value = i;
@@ -284,10 +357,16 @@ function onPhotoDrop(i) {
     dragIndex.value = null;
     return;
   }
-  const next = [...form.photos];
-  const [moved] = next.splice(dragIndex.value, 1);
-  next.splice(i, 0, moved);
-  form.photos = next;
+  const from = dragIndex.value;
+  const nextPhotos = [...form.photos];
+  const nextColors = [...form.photoColors];
+  while (nextColors.length < nextPhotos.length) nextColors.push('');
+  const [movedPhoto] = nextPhotos.splice(from, 1);
+  const [movedColor] = nextColors.splice(from, 1);
+  nextPhotos.splice(i, 0, movedPhoto);
+  nextColors.splice(i, 0, movedColor ?? '');
+  form.photos = nextPhotos;
+  form.photoColors = nextColors;
   dragIndex.value = null;
 }
 

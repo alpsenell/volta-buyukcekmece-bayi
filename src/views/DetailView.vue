@@ -10,8 +10,11 @@
 
       <div class="detail-grid">
         <div class="detail-image-side">
-          <MotoCarousel :motor="motor" />
-          <span v-if="motor.featured" class="featured-tag" style="margin-top: 12px; align-self: flex-start;">Öne çıkan</span>
+          <MotoCarousel :motor="motor" :photos="filteredPhotos" />
+          <div class="detail-image-tags" style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <span v-if="motor.featured" class="featured-tag">Öne çıkan</span>
+            <span v-if="onSale" class="sale-tag">İndirim</span>
+          </div>
         </div>
 
         <div class="detail-info-side">
@@ -27,7 +30,11 @@
 
           <div class="detail-price-block">
             <div class="detail-price-label">Bayi fiyatı (KDV dahil)</div>
-            <div class="detail-price">{{ formatPrice(motor.price) }}</div>
+            <div class="detail-price-row">
+              <span v-if="onSale" class="detail-compare-price">{{ formatPrice(motor.comparePrice) }}</span>
+              <span class="detail-price">{{ formatPrice(motor.price) }}</span>
+              <span v-if="onSale" class="detail-discount-badge">%{{ discountPercent }} indirim</span>
+            </div>
           </div>
 
           <div class="detail-specs">
@@ -105,6 +112,39 @@ const related = computed(() => {
   return store.motors
     .filter((m) => m.category === motor.value.category && m.id !== motor.value.id)
     .slice(0, 3);
+});
+
+const onSale = computed(() => {
+  const m = motor.value;
+  if (!m) return false;
+  const cp = Number(m.comparePrice);
+  return Number.isFinite(cp) && cp > Number(m.price);
+});
+
+const discountPercent = computed(() => {
+  if (!onSale.value) return 0;
+  const cp = Number(motor.value.comparePrice);
+  const p = Number(motor.value.price);
+  return Math.round(((cp - p) / cp) * 100);
+});
+
+// Filter carousel photos by the selected color. Untagged photos are shown
+// for every color; if the selected color has its own tagged photos, those
+// + untagged ones are shown. Falls back to all photos.
+const filteredPhotos = computed(() => {
+  const m = motor.value;
+  if (!m) return [];
+  const all = Array.isArray(m.photos) ? m.photos : [];
+  const tags = Array.isArray(m.photoColors) ? m.photoColors : [];
+  if (!all.length) return [];
+  const colors = Array.isArray(m.colors) ? m.colors : [];
+  const sel = colors[selectedColor.value] || '';
+  if (!sel || !tags.some((t) => t)) return all; // no color selected OR no tags exist
+  const matching = all.filter((_, i) => {
+    const tag = tags[i] || '';
+    return tag === '' || tag === sel;
+  });
+  return matching.length ? matching : all;
 });
 
 const phoneHref = computed(() => {
