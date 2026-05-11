@@ -123,14 +123,38 @@
                 v-for="(c, i) in form.colors" :key="i"
                 class="color-editor-item"
               >
-                <input type="color" :value="c" @input="updateColor(i, $event.target.value)" />
-                <input type="text" :value="c" @input="updateColor(i, $event.target.value)" placeholder="#000000" />
-                <button type="button" class="btn-icon" @click="removeColor(i)" aria-label="Rengi sil">×</button>
+                <div class="color-editor-row">
+                  <input type="color" :value="c" @input="updateColor(i, $event.target.value)" />
+                  <input type="text" :value="c" @input="updateColor(i, $event.target.value)" placeholder="#000000" />
+                  <button type="button" class="btn-icon" @click="removeColor(i)" aria-label="Rengi sil">×</button>
+                </div>
+
+                <div class="color-editor-thumbs">
+                  <div class="color-editor-thumbs-label">Vitrin görseli</div>
+                  <template v-if="form.photos.length">
+                    <button
+                      v-for="(p, j) in form.photos"
+                      :key="`${i}-${j}-${p}`"
+                      type="button"
+                      class="color-editor-thumb"
+                      :class="{ selected: form.photoColors[j] === c }"
+                      :style="{ backgroundImage: `url(${p})` }"
+                      @click="toggleColorFeatured(i, j)"
+                      :title="form.photoColors[j] === c ? 'Vitrin görseli — kaldırmak için tekrar tıkla' : 'Bu rengin vitrin görseli yap'"
+                      :aria-pressed="form.photoColors[j] === c"
+                      :aria-label="form.photoColors[j] === c ? `${c} vitrin görseli — kaldır` : `${c} için vitrin görseli ${j + 1}`"
+                    ></button>
+                  </template>
+                  <span v-else class="color-editor-thumbs-empty">
+                    Önce sağdaki bölümden fotoğraf yükleyin, sonra her renk için vitrin görselini buradan seçin.
+                  </span>
+                </div>
               </div>
               <button type="button" class="btn btn-ghost btn-sm" @click="addColor">+ Renk ekle</button>
             </div>
-            <small style="color: var(--muted); display: block; margin-top: 8px;">
+            <small style="color: var(--muted); display: block; margin-top: 12px;">
               Tek renk varsa ürün sayfasında renk seçenekleri bölümü gizlenir.
+              Bir renge vitrin görseli atadığınızda, ürün sayfasında o renk seçilince ilgili fotoğraf öne çıkar.
             </small>
           </div>
 
@@ -184,21 +208,11 @@
                       title="Sil"
                     >×</button>
                   </div>
-                  <select
-                    class="photo-color-tag"
-                    :value="form.photoColors[i] || ''"
-                    @change="setPhotoColor(i, $event.target.value)"
-                    @click.stop
-                    @mousedown.stop
-                    title="Renk etiketi"
-                  >
-                    <option value="">Tümü</option>
-                    <option v-for="c in form.colors" :key="c" :value="c">{{ c }}</option>
-                  </select>
                   <span
                     v-if="form.photoColors[i]"
                     class="photo-color-swatch"
                     :style="{ background: form.photoColors[i] }"
+                    :title="`${form.photoColors[i]} renginin vitrin görseli`"
                     aria-hidden="true"
                   ></span>
                 </div>
@@ -365,9 +379,21 @@ function removeColor(i) {
   }
 }
 
-function setPhotoColor(i, color) {
-  while (form.photoColors.length <= i) form.photoColors.push('');
-  form.photoColors[i] = color || '';
+// Bind a photo as the featured image for a color. Enforces one-photo-per-color:
+// when a new photo is set, any other photo previously tagged with this color is cleared.
+// Clicking the already-bound thumbnail clears the binding.
+function toggleColorFeatured(colorIndex, photoIndex) {
+  const color = form.colors[colorIndex];
+  if (!color) return;
+  // Normalise photoColors length first
+  while (form.photoColors.length < form.photos.length) form.photoColors.push('');
+  const current = form.photoColors[photoIndex];
+  if (current === color) {
+    form.photoColors[photoIndex] = '';
+    return;
+  }
+  form.photoColors = form.photoColors.map((c) => (c === color ? '' : c));
+  form.photoColors[photoIndex] = color;
 }
 
 // ---- Specs ----
