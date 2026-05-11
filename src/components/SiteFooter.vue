@@ -31,7 +31,7 @@
         <div>
           <h4>Site</h4>
           <RouterLink to="/">Ana Sayfa</RouterLink>
-          <RouterLink to="/katalog">Motorlar</RouterLink>
+          <RouterLink to="/katalog">Modeller</RouterLink>
           <RouterLink to="/hakkimizda">Hakkımızda</RouterLink>
           <RouterLink to="/sss">SSS</RouterLink>
           <RouterLink to="/iletisim">İletişim</RouterLink>

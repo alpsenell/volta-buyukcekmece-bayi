@@ -3,7 +3,7 @@
     <section class="page-head container">
       <div class="page-head-text">
         <div class="section-eyebrow">Tüm modeller</div>
-        <h1 class="page-title">Motor kataloğu</h1>
+        <h1 class="page-title">Model kataloğu</h1>
         <p class="page-lead">
           Elektrikli scooter, ATV ve e-bisiklet modellerimiz. Bayi fiyatları KDV dahildir.
         </p>
@@ -35,7 +35,7 @@
           <option value="order">Önerilen</option>
           <option value="price-asc">Fiyat ↑</option>
           <option value="price-desc">Fiyat ↓</option>
-          <option value="range-desc">Menzil ↓</option>
+          <option value="name-asc">İsim A→Z</option>
         </select>
         <select v-model="layout" class="select">
           <option value="grid">Grid</option>
@@ -46,7 +46,7 @@
 
     <section class="container catalog-grid-section">
       <div v-if="filtered.length === 0" class="empty">
-        <p>Bu filtrelere uygun motor bulunamadı.</p>
+        <p>Bu filtrelere uygun model bulunamadı.</p>
       </div>
       <div v-else :class="layout === 'list' ? 'moto-list' : 'moto-grid'">
         <MotoCard
@@ -90,7 +90,7 @@ const filtered = computed(() => {
 
   if (sort.value === 'price-asc') list.sort((a, b) => a.price - b.price);
   else if (sort.value === 'price-desc') list.sort((a, b) => b.price - a.price);
-  else if (sort.value === 'range-desc') list.sort((a, b) => b.range - a.range);
+  else if (sort.value === 'name-asc') list.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
   else list.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
 
   return list;

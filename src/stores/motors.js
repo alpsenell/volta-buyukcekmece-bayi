@@ -13,9 +13,7 @@ function mapFromDb(row) {
     category: row.category,
     price: Number(row.price),
     comparePrice: row.compare_price == null ? null : Number(row.compare_price),
-    range: row.range_km,
-    topSpeed: row.top_speed,
-    chargeTime: Number(row.charge_hours),
+    specs: Array.isArray(row.specs) ? row.specs : [],
     colors: row.colors ?? [],
     inStock: row.in_stock,
     featured: row.featured,
@@ -34,9 +32,15 @@ function mapToDb(m) {
     category: m.category,
     price: m.price,
     compare_price: m.comparePrice == null || m.comparePrice === '' ? null : Number(m.comparePrice),
-    range_km: m.range,
-    top_speed: m.topSpeed,
-    charge_hours: m.chargeTime,
+    specs: Array.isArray(m.specs)
+      ? m.specs
+          .map((s) => ({
+            label: String(s.label || '').trim(),
+            value: String(s.value ?? '').trim(),
+            unit: String(s.unit ?? '').trim(),
+          }))
+          .filter((s) => s.label && s.value)
+      : [],
     colors: m.colors ?? [],
     in_stock: m.inStock,
     featured: m.featured,

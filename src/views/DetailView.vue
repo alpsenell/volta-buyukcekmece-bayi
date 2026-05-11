@@ -1,6 +1,6 @@
 <template>
   <main v-if="!motor" class="container empty-page">
-    <h2>Motor bulunamadı</h2>
+    <h2>Model bulunamadı</h2>
     <RouterLink to="/katalog" class="btn btn-primary">Kataloğa dön</RouterLink>
   </main>
 
@@ -26,7 +26,11 @@
             <span v-if="motor.featured" class="meta-tag">★ Öne çıkan</span>
           </div>
 
-          <p class="detail-desc">{{ motor.description }}</p>
+          <div
+            v-if="motor.description"
+            class="detail-desc rich-content"
+            v-html="motor.description"
+          ></div>
 
           <div class="detail-price-block">
             <div class="detail-price-label">Bayi fiyatı (KDV dahil)</div>
@@ -37,19 +41,11 @@
             </div>
           </div>
 
-          <div class="detail-specs">
+          <div v-if="specsList.length" class="detail-specs">
             <div class="spec-row">
-              <div class="spec">
-                <div class="spec-label">Menzil</div>
-                <div class="spec-value">{{ motor.range }} <span>km</span></div>
-              </div>
-              <div class="spec">
-                <div class="spec-label">Maks. hız</div>
-                <div class="spec-value">{{ motor.topSpeed }} <span>km/s</span></div>
-              </div>
-              <div class="spec">
-                <div class="spec-label">Şarj süresi</div>
-                <div class="spec-value">{{ motor.chargeTime }} <span>saat</span></div>
+              <div v-for="(s, i) in specsList" :key="i" class="spec">
+                <div class="spec-label">{{ s.label }}</div>
+                <div class="spec-value">{{ s.value }} <span v-if="s.unit">{{ s.unit }}</span></div>
               </div>
             </div>
           </div>
@@ -128,6 +124,16 @@ const discountPercent = computed(() => {
   return Math.round(((cp - p) / cp) * 100);
 });
 
+const specsList = computed(() => {
+  const arr = Array.isArray(motor.value?.specs) ? motor.value.specs : [];
+  return arr.filter((s) => s && s.label && s.value);
+});
+
+function stripHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 // Filter carousel photos by the selected color. Untagged photos are shown
 // for every color; if the selected color has its own tagged photos, those
 // + untagged ones are shown. Falls back to all photos.
@@ -164,7 +170,11 @@ watchEffect(() => {
   if (!m) return;
   const catLabel = categoryStore.labelOf(m.category);
   document.title = `${m.name} · Volta Motor Büyükçekmece Bayi`;
-  const desc = `${m.name} — ${catLabel}. Menzil ${m.range} km, maks. hız ${m.topSpeed} km/s, şarj ${m.chargeTime} saat. ${formatPrice(m.price)}`;
+  const specSummary = specsList.value
+    .map((s) => `${s.label} ${s.value}${s.unit ? ' ' + s.unit : ''}`)
+    .join(', ');
+  const plainDesc = stripHtml(m.description);
+  const desc = `${m.name} — ${catLabel}${specSummary ? '. ' + specSummary : ''}${plainDesc ? '. ' + plainDesc.slice(0, 140) : ''} ${formatPrice(m.price)}`.replace(/\s+/g, ' ').trim();
   let metaDesc = document.head.querySelector('meta[name="description"]');
   if (!metaDesc) {
     metaDesc = document.createElement('meta');
@@ -178,10 +188,17 @@ watchEffect(() => {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: m.name,
-    description: m.description || desc,
+    description: plainDesc || desc,
     category: catLabel,
     image: photos.length ? photos : undefined,
     brand: { '@type': 'Brand', name: 'Volta Motor' },
+    additionalProperty: specsList.value.length
+      ? specsList.value.map((s) => ({
+          '@type': 'PropertyValue',
+          name: s.label,
+          value: s.unit ? `${s.value} ${s.unit}` : s.value,
+        }))
+      : undefined,
     offers: {
       '@type': 'Offer',
       price: m.price,

@@ -19,8 +19,8 @@ const routes = [
     name: 'catalog',
     component: () => import('./views/CatalogView.vue'),
     meta: {
-      title: `Motor Kataloğu · ${SITE_NAME}`,
-      description: 'Tüm Volta Motor modelleri — elektrikli scooter, ATV ve bisiklet. Fiyat, menzil ve özelliklere göre filtreleyin.',
+      title: `Model Kataloğu · ${SITE_NAME}`,
+      description: 'Tüm Volta Motor modelleri — elektrikli scooter, ATV, elektrikli bisiklet ve daha fazlası. Fiyat ve özelliklere göre filtreleyin.',
     },
   },
   {

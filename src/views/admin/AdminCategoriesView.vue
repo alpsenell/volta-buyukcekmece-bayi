@@ -4,7 +4,7 @@
       <div>
         <h1>Kategoriler</h1>
         <p class="admin-page-lead">
-          Ürün kategorilerini yönetin. Bir kategoriyi silmeden önce o kategorideki tüm motorları başka bir kategoriye taşıyın.
+          Ürün kategorilerini yönetin. Bir kategoriyi silmeden önce o kategorideki tüm modelleri başka bir kategoriye taşıyın.
         </p>
       </div>
       <div class="admin-page-actions">

@@ -87,7 +87,7 @@ export const useCategoryStore = defineStore('categories', {
       if (countErr) throw countErr;
       if ((count ?? 0) > 0) {
         throw new Error(
-          `Bu kategoride ${count} motor var. Önce motorları başka bir kategoriye taşıyın.`
+          `Bu kategoride ${count} model var. Önce modelleri başka bir kategoriye taşıyın.`
         );
       }
       const { error } = await supabase.from('categories').delete().eq('id', id);

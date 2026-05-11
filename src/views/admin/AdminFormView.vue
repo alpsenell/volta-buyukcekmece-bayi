@@ -2,8 +2,8 @@
   <div class="admin-page">
     <div class="admin-page-head">
       <div>
-        <RouterLink to="/admin" class="breadcrumb">← Motorlar</RouterLink>
-        <h1>{{ isEdit ? 'Motoru düzenle' : 'Yeni motor ekle' }}</h1>
+        <RouterLink to="/admin" class="breadcrumb">← Modeller</RouterLink>
+        <h1>{{ isEdit ? 'Modeli düzenle' : 'Yeni model ekle' }}</h1>
       </div>
     </div>
 
@@ -47,27 +47,72 @@
             <small v-if="hasValidComparePrice" style="color: var(--muted); display: block; margin-top: -4px;">
               Karşılaştırma fiyatı, mevcut fiyatın üstünde olmalıdır — üzeri çizili olarak gösterilir.
             </small>
-            <label class="field">
-              <span>Açıklama</span>
-              <textarea v-model="form.description" rows="4" placeholder="Modelin kısa tanıtımı..."></textarea>
-            </label>
+            <div class="field">
+              <span class="field-label">Açıklama</span>
+              <RichTextEditor v-model="form.description" />
+            </div>
           </div>
 
           <div class="form-section">
             <h3>Teknik özellikler</h3>
-            <div class="field-row">
-              <label class="field">
-                <span>Menzil (km)</span>
-                <input type="number" v-model.number="form.range" min="0" />
-              </label>
-              <label class="field">
-                <span>Maks. hız (km/s)</span>
-                <input type="number" v-model.number="form.topSpeed" min="0" />
-              </label>
-              <label class="field">
-                <span>Şarj süresi (saat)</span>
-                <input type="number" v-model.number="form.chargeTime" min="0" step="0.5" />
-              </label>
+            <p class="form-section-hint">
+              Bu modelin teknik özelliklerini istediğiniz gibi tanımlayın.
+              Elektrikli modeller için "Menzil / Maks. hız / Şarj süresi",
+              benzinli modeller için "Motor hacmi / Maks. hız / Yakıt tüketimi" gibi.
+            </p>
+            <div class="spec-editor">
+              <div
+                v-for="(s, i) in form.specs"
+                :key="i"
+                class="spec-editor-row"
+              >
+                <input
+                  type="text"
+                  v-model="s.label"
+                  placeholder="Özellik adı (örn: Menzil)"
+                  class="spec-editor-label"
+                />
+                <input
+                  type="text"
+                  v-model="s.value"
+                  placeholder="Değer (örn: 60)"
+                  class="spec-editor-value"
+                />
+                <input
+                  type="text"
+                  v-model="s.unit"
+                  placeholder="Birim (örn: km)"
+                  class="spec-editor-unit"
+                />
+                <div class="spec-editor-actions">
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    @click="moveSpec(i, -1)"
+                    :disabled="i === 0"
+                    title="Yukarı taşı"
+                    aria-label="Yukarı taşı"
+                  >↑</button>
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    @click="moveSpec(i, 1)"
+                    :disabled="i === form.specs.length - 1"
+                    title="Aşağı taşı"
+                    aria-label="Aşağı taşı"
+                  >↓</button>
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    @click="removeSpec(i)"
+                    title="Bu özelliği sil"
+                    aria-label="Sil"
+                  >×</button>
+                </div>
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm" @click="addSpec">
+                + Özellik ekle
+              </button>
             </div>
           </div>
 
@@ -202,7 +247,7 @@
         <p v-if="error" class="form-error">{{ error }}</p>
         <RouterLink to="/admin" class="btn btn-ghost">İptal</RouterLink>
         <button type="submit" class="btn btn-primary btn-lg" :disabled="saving || uploading">
-          {{ saving ? 'Kaydediliyor…' : (isEdit ? 'Değişiklikleri kaydet' : 'Motoru ekle') }}
+          {{ saving ? 'Kaydediliyor…' : (isEdit ? 'Değişiklikleri kaydet' : 'Modeli ekle') }}
         </button>
       </div>
     </form>
@@ -215,6 +260,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useMotorStore } from '../../stores/motors';
 import { useCategoryStore } from '../../stores/site';
 import MotoCard from '../../components/MotoCard.vue';
+import RichTextEditor from '../../components/RichTextEditor.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -234,9 +280,11 @@ const blank = {
   price: 0,
   comparePrice: null,
   description: '',
-  range: 50,
-  topSpeed: 40,
-  chargeTime: 4,
+  specs: [
+    { label: 'Menzil',      value: '', unit: 'km' },
+    { label: 'Maks. hız',   value: '', unit: 'km/s' },
+    { label: 'Şarj süresi', value: '', unit: 'saat' },
+  ],
   colors: ['#0a0a0a', '#95c121'],
   inStock: true,
   featured: false,
@@ -269,6 +317,13 @@ onMounted(async () => {
       while (form.photoColors.length < form.photos.length) form.photoColors.push('');
       form.photoColors = form.photoColors.slice(0, form.photos.length);
       if (form.visible == null) form.visible = true;
+      // Specs: ensure array of { label, value, unit }
+      if (!Array.isArray(form.specs)) form.specs = [];
+      form.specs = form.specs.map((s) => ({
+        label: s.label ?? '',
+        value: s.value ?? '',
+        unit: s.unit ?? '',
+      }));
     }
   }
 });
@@ -313,6 +368,20 @@ function removeColor(i) {
 function setPhotoColor(i, color) {
   while (form.photoColors.length <= i) form.photoColors.push('');
   form.photoColors[i] = color || '';
+}
+
+// ---- Specs ----
+function addSpec() {
+  form.specs.push({ label: '', value: '', unit: '' });
+}
+function removeSpec(i) {
+  form.specs.splice(i, 1);
+}
+function moveSpec(i, delta) {
+  const j = i + delta;
+  if (j < 0 || j >= form.specs.length) return;
+  const [moved] = form.specs.splice(i, 1);
+  form.specs.splice(j, 0, moved);
 }
 
 // ---- Photos ----

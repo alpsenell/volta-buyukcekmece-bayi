@@ -2,16 +2,16 @@
   <div class="admin-page">
     <div class="admin-page-head">
       <div>
-        <h1>Motorlar</h1>
+        <h1>Modeller</h1>
         <p class="admin-page-lead">
-          Toplam {{ store.stats.total }} motor · {{ store.stats.inStock }} stokta · {{ store.stats.featured }} öne çıkan
+          Toplam {{ store.stats.total }} model · {{ store.stats.inStock }} stokta · {{ store.stats.featured }} öne çıkan
         </p>
       </div>
       <div class="admin-page-actions">
         <button class="btn btn-ghost" @click="refresh" :disabled="store.loading">
           {{ store.loading ? 'Yükleniyor…' : '↻ Yenile' }}
         </button>
-        <RouterLink to="/admin/yeni" class="btn btn-primary">+ Yeni motor</RouterLink>
+        <RouterLink to="/admin/yeni" class="btn btn-primary">+ Yeni model</RouterLink>
       </div>
     </div>
 
@@ -20,7 +20,7 @@
     <div class="admin-stats-row">
       <div class="admin-stat-card">
         <div class="admin-stat-num">{{ store.stats.total }}</div>
-        <div class="admin-stat-label">Toplam motor</div>
+        <div class="admin-stat-label">Toplam model</div>
       </div>
       <div class="admin-stat-card">
         <div class="admin-stat-num">{{ store.stats.inStock }}</div>

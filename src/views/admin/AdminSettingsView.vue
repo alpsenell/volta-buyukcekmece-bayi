@@ -64,7 +64,7 @@
           <div class="field-row">
             <label class="field">
               <span>Buton metni</span>
-              <input type="text" v-model="form.hero_cta_label" placeholder="Tüm motorları gör" />
+              <input type="text" v-model="form.hero_cta_label" placeholder="Tüm modelleri gör" />
             </label>
             <label class="field">
               <span>Buton bağlantısı</span>

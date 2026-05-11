@@ -16,7 +16,7 @@
           <p class="hero-lead">{{ heroSubtitle }}</p>
           <div class="hero-ctas">
             <RouterLink :to="settings.hero_cta_href || '/katalog'" class="btn btn-primary btn-lg">
-              {{ settings.hero_cta_label || 'Tüm motorları gör' }}
+              {{ settings.hero_cta_label || 'Tüm modelleri gör' }}
             </RouterLink>
             <RouterLink to="/iletisim" class="btn btn-ghost btn-lg">Bayiyi ziyaret et →</RouterLink>
           </div>
@@ -35,7 +35,7 @@
           <p class="hero-lead">{{ heroSubtitle }}</p>
           <div class="hero-ctas">
             <RouterLink :to="settings.hero_cta_href || '/katalog'" class="btn btn-primary btn-lg">
-              {{ settings.hero_cta_label || 'Tüm motorları gör' }}
+              {{ settings.hero_cta_label || 'Tüm modelleri gör' }}
             </RouterLink>
             <RouterLink to="/iletisim" class="btn btn-ghost btn-lg">Bayiyi ziyaret et →</RouterLink>
           </div>

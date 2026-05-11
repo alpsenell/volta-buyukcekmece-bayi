@@ -9,10 +9,10 @@
         <StockBadge :in-stock="motor.inStock" />
       </div>
       <h3 class="moto-card-title">{{ motor.name }}</h3>
-      <div class="moto-card-specs">
-        <span><strong>{{ motor.range }}</strong> km menzil</span>
-        <span><strong>{{ motor.topSpeed }}</strong> km/s</span>
-        <span><strong>{{ motor.chargeTime }}</strong> sa şarj</span>
+      <div v-if="topSpecs.length" class="moto-card-specs">
+        <span v-for="(s, i) in topSpecs" :key="i">
+          <strong>{{ s.value }}</strong>{{ s.unit ? ' ' + s.unit : '' }}<template v-if="s.label"> {{ s.label.toLowerCase() }}</template>
+        </span>
       </div>
       <ColorDots :colors="motor.colors" />
     </div>
@@ -36,12 +36,11 @@
     <div class="moto-card-body">
       <div class="moto-card-cat">{{ categoryStore.labelOf(motor.category) }}</div>
       <h3 class="moto-card-title">{{ motor.name }}</h3>
-      <div class="moto-card-specs">
-        <span><strong>{{ motor.range }}</strong> km</span>
-        <span class="dot-sep">·</span>
-        <span><strong>{{ motor.topSpeed }}</strong> km/s</span>
-        <span class="dot-sep">·</span>
-        <span><strong>{{ motor.chargeTime }}</strong> sa</span>
+      <div v-if="topSpecs.length" class="moto-card-specs">
+        <template v-for="(s, i) in topSpecs" :key="i">
+          <span class="dot-sep" v-if="i > 0">·</span>
+          <span><strong>{{ s.value }}</strong>{{ s.unit ? ' ' + s.unit : '' }}</span>
+        </template>
       </div>
       <div class="moto-card-bottom">
         <ColorDots :colors="motor.colors" />
@@ -78,5 +77,10 @@ function goDetail() {
 const onSale = computed(() => {
   const cp = Number(props.motor.comparePrice);
   return Number.isFinite(cp) && cp > Number(props.motor.price);
+});
+
+const topSpecs = computed(() => {
+  const list = Array.isArray(props.motor.specs) ? props.motor.specs : [];
+  return list.filter((s) => s && s.value).slice(0, 3);
 });
 </script>

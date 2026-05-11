@@ -39,7 +39,7 @@
           </svg>
           <span>{{ settings.phone }}</span>
         </a>
-        <RouterLink to="/katalog" class="btn btn-primary">Motorları Gör</RouterLink>
+        <RouterLink to="/katalog" class="btn btn-primary">Modelleri Gör</RouterLink>
         <button class="menu-toggle" @click="menuOpen = !menuOpen" aria-label="Menü">
           <span></span><span></span><span></span>
         </button>
@@ -65,7 +65,7 @@ const phoneHref = computed(() => {
 
 const links = [
   { path: '/', label: 'Ana Sayfa' },
-  { path: '/katalog', label: 'Motorlar' },
+  { path: '/katalog', label: 'Modeller' },
   { path: '/hakkimizda', label: 'Hakkımızda' },
   { path: '/sss', label: 'SSS' },
   { path: '/iletisim', label: 'İletişim' },

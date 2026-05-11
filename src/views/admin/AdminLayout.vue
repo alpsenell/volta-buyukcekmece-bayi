@@ -17,10 +17,10 @@
 
       <nav class="admin-nav">
         <RouterLink to="/admin" exact-active-class="active" class="admin-nav-link">
-          <span class="admin-nav-icon">▤</span> Motorlar
+          <span class="admin-nav-icon">▤</span> Modeller
         </RouterLink>
         <RouterLink to="/admin/yeni" active-class="active" class="admin-nav-link">
-          <span class="admin-nav-icon">＋</span> Yeni motor
+          <span class="admin-nav-icon">＋</span> Yeni model
         </RouterLink>
         <RouterLink to="/admin/kategoriler" active-class="active" class="admin-nav-link">
           <span class="admin-nav-icon">▦</span> Kategoriler
